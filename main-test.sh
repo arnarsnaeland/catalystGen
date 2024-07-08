@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 #SBATCH --mail-type=END,FAIL
-#SBATCH --partition=sm3090el8
+#SBATCH --partition=sm3090_devel
 #SBATCH -N 1      # Minimum of 1 node
 #SBATCH -n 8     # 8 MPI processes per node
 #SBATCH --time=0-00:15:00

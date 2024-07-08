@@ -2,6 +2,7 @@ from ocdata.core import Bulk, Adsorbate, Slab, AdsorbateSlabConfig
 from ase import Atoms
 from ase.io import read
 from modelPrompter import prompt_llm
+import os
 
 # Define the Miller index for the surface (just for testing, llm will generate this)
 MILLER_IDX = (1, 1, 1)

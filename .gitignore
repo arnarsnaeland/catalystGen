@@ -6,3 +6,4 @@ pdf/
 2606.txt
 notes 2106.txt
 .venv/
+*.out

@@ -7,3 +7,4 @@ pdf/
 notes 2106.txt
 .venv/
 *.out
+checkpoint*

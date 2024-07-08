@@ -215,4 +215,4 @@ def prompt_llm(model_name, model_path, num_samples = 5, batch_size = 100, out_pa
     
     model, tokenizer = prepare_model_and_tokenizer(model_name, model_path)
 
-    unconditional_sample(model, tokenizer, num_samples, batch_size, out_path, temperature, top_p, instruction_prompt)
+    return unconditional_sample(model, tokenizer, num_samples, batch_size, out_path, temperature, top_p, instruction_prompt)

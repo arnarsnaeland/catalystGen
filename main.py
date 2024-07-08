@@ -6,7 +6,7 @@ from modelPrompter import prompt_llm
 # Define the Miller index for the surface (just for testing, llm will generate this)
 MILLER_IDX = (1, 1, 1)
 
-cifs = prompt_llm("7b", "/checkpoint-84000")
+cifs = prompt_llm('7b', '/checkpoint-84000')
 
 
 for cif in cifs:

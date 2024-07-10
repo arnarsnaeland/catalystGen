@@ -127,7 +127,7 @@ def prepare_model_and_tokenizer(model_name, model_path):
         model=model,
     )
 
-    model = PeftModel.from_pretrained(model, model_path, device_map="auto")
+    model = PeftModel.from_pretrained(model, model_path)
     
     return model, tokenizer
 
@@ -207,7 +207,7 @@ def unconditional_sample(model, tokenizer, num_samples, batch_size, temperature,
     return outputs
 
 # Use to prompt llm, only need to provide model name and model path
-def prompt_llm(model_name, model_path, num_samples = 5, batch_size = 100, out_path = "llm_samples.csv", temperature = 0.9, top_p = 0.9, instruction_prompt = ""):
+def prompt_llm(model_name : str, model_path : str, num_samples = 5, batch_size = 100, out_path = "llm_samples.csv", temperature = 0.9, top_p = 0.9, instruction_prompt = ""):
 
     if ".csv" not in out_path:
         i = os.environ.get("SLURM_ARRAY_TASK_ID", 0)

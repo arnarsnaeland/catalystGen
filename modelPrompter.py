@@ -85,6 +85,29 @@ def get_crystal_string(cif_str):
 
     return crystal_str
 
+def smart_tokenizer_and_embedding_resize(
+    special_tokens_dict, 
+    llama_tokenizer, 
+    model,
+):
+    """Resize tokenizer and embedding.
+
+    Note: This is the unoptimized version that may make your embedding size not be divisible by 64.
+    """
+    num_new_tokens = llama_tokenizer.add_special_tokens(special_tokens_dict)
+    model.resize_token_embeddings(len(llama_tokenizer))
+
+    if num_new_tokens > 0:
+        input_embeddings = model.get_input_embeddings().weight.data
+        output_embeddings = model.get_output_embeddings().weight.data
+
+        input_embeddings_avg = input_embeddings[:-num_new_tokens].mean(dim=0, keepdim=True)
+        output_embeddings_avg = output_embeddings[:-num_new_tokens].mean(dim=0, keepdim=True)
+
+        input_embeddings[-num_new_tokens:] = input_embeddings_avg
+        output_embeddings[-num_new_tokens:] = output_embeddings_avg
+
+
 def prepare_model_and_tokenizer(model_name, model_path):
     llama_options = model_name.split("-")
     is_chat = len(llama_options) == 2
@@ -95,6 +118,7 @@ def prepare_model_and_tokenizer(model_name, model_path):
         return f"meta-llama/Llama-2-{model_size.lower()}-{chat}hf"
 
     model_string = llama2_model_string(model_size, is_chat)
+    print(f"Using model: {model_string}")
     
     model = LlamaForCausalLM.from_pretrained(
         model_string,
@@ -127,31 +151,9 @@ def prepare_model_and_tokenizer(model_name, model_path):
         model=model,
     )
 
-    model = PeftModel.from_pretrained(model, model_path)
+    model = PeftModel.from_pretrained(model, model_path, device_map="auto")
     
     return model, tokenizer
-
-def smart_tokenizer_and_embedding_resize(
-    special_tokens_dict, 
-    llama_tokenizer, 
-    model,
-):
-    """Resize tokenizer and embedding.
-
-    Note: This is the unoptimized version that may make your embedding size not be divisible by 64.
-    """
-    num_new_tokens = llama_tokenizer.add_special_tokens(special_tokens_dict)
-    model.resize_token_embeddings(len(llama_tokenizer))
-
-    if num_new_tokens > 0:
-        input_embeddings = model.get_input_embeddings().weight.data
-        output_embeddings = model.get_output_embeddings().weight.data
-
-        input_embeddings_avg = input_embeddings[:-num_new_tokens].mean(dim=0, keepdim=True)
-        output_embeddings_avg = output_embeddings[:-num_new_tokens].mean(dim=0, keepdim=True)
-
-        input_embeddings[-num_new_tokens:] = input_embeddings_avg
-        output_embeddings[-num_new_tokens:] = output_embeddings_avg
         
 def unconditional_sample(model, tokenizer, num_samples, batch_size, temperature, top_p, instruction_prompt):
 

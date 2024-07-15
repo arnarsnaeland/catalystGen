@@ -7,7 +7,7 @@ import os
 # Define the Miller index for the surface (just for testing, llm will generate this)
 MILLER_IDX = (1, 1, 1)
 MODEL_NAME = "7b"
-MODEL_PATH = "/checkpoint-80000"
+MODEL_PATH = "checkpoint-80000"
 
 cifs = prompt_llm(MODEL_NAME, MODEL_PATH, instruction_prompt="The material is Ruthenium (Ru)")
 

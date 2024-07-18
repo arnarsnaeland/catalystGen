@@ -5,7 +5,6 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import os
 import pandas as pd
 import numpy as np
 
@@ -155,12 +154,12 @@ def prepare_model_and_tokenizer(model_name, model_path):
     
     return model, tokenizer
         
-def unconditional_sample(model, tokenizer, num_samples, batch_size, temperature, top_p, instruction_prompt):
+def unconditional_sample(model, tokenizer, args):
 
     prompts = []
-    for _ in range(num_samples):
+    for _ in range(args.num_samples):
         prompt = "Below is a description of a bulk material. "
-        prompt += instruction_prompt
+        prompt += args.instruction_prompt + " "
         prompt += (
             "Generate a description of the lengths and angles of the lattice vectors "
             "and then the element type and coordinates for each atom within the lattice:\n"
@@ -168,8 +167,8 @@ def unconditional_sample(model, tokenizer, num_samples, batch_size, temperature,
         prompts.append(prompt)
  
     outputs = []
-    while len(outputs) < num_samples:
-        batch_prompts = prompts[len(outputs):len(outputs)+batch_size]
+    while len(outputs) < args.num_samples:
+        batch_prompts = prompts[len(outputs):len(outputs)+args.batch_size]
 
         batch = tokenizer(
             list(batch_prompts), 
@@ -181,8 +180,8 @@ def unconditional_sample(model, tokenizer, num_samples, batch_size, temperature,
             **batch,
             do_sample=True,
             max_new_tokens=500,
-            temperature=temperature, 
-            top_p=top_p, 
+            temperature=args.temperature, 
+            top_p=args.top_p, 
         )
 
         gen_strs = tokenizer.batch_decode(
@@ -206,15 +205,14 @@ def unconditional_sample(model, tokenizer, num_samples, batch_size, temperature,
                 "cif": cif_str,
             })
 
+    df = pd.DataFrame(outputs)
+    df.to_csv(args.out_path, index=False)
+
     return outputs
 
 # Use to prompt llm, only need to provide model name and model path
-def prompt_llm(model_name : str, model_path : str, num_samples = 5, batch_size = 100, out_path = "llm_samples.csv", temperature = 0.9, top_p = 0.9, instruction_prompt = ""):
-
-    if ".csv" not in out_path:
-        i = os.environ.get("SLURM_ARRAY_TASK_ID", 0)
-        out_path = os.path.join(out_path, f"samples_{i}.csv") 
+def prompt_llm(args):
     
-    model, tokenizer = prepare_model_and_tokenizer(model_name, model_path)
+    model, tokenizer = prepare_model_and_tokenizer(args.model_name, args.model_path)
 
-    return unconditional_sample(model, tokenizer, num_samples, batch_size, temperature, top_p, instruction_prompt)
+    return unconditional_sample(model, tokenizer, args)

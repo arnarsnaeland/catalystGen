@@ -8,3 +8,4 @@ notes 2106.txt
 .venv/
 *.out
 checkpoint*
+llm_samples.csv

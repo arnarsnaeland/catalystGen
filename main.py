@@ -1,5 +1,6 @@
 from ocdata.core import Bulk, Adsorbate, Slab, AdsorbateSlabConfig
 from ase.io import read, write
+from ase import Atoms
 from modelPrompter import prompt_llm
 import io
 import argparse
@@ -13,7 +14,7 @@ import os
 #Creates samples using the llm and saves them to a csv file, out_path
 def create_llm_samples(args):
     if ".csv" not in args.out_path:
-        i = os.environ.get("SLURM_ARRAY_TASK_ID", 0)
+        i = os.environ.get("SLURM_JOB_ID", 0)
         args.out_path = os.path.join(args.out_path, f"samples_{i}.csv") 
     prompt_llm(args)
 
@@ -23,6 +24,10 @@ def read_llm_samples(out_path)->list:
 
 def cif_to_bulk(cif:str)->Bulk:
     return Bulk(read(io.StringIO(cif), ':', 'cif')[0])
+
+def create_adsorbate(adsorbate:str)->Adsorbate:
+    #TODO: implement specific adsorbate creation
+    return Adsorbate()
 
 def bulk_to_slab(bulk:Bulk)->list[Slab]:
     return Slab.from_bulk_get_all_slabs(bulk) #By default gets all slabs up to miller index 2
@@ -35,7 +40,7 @@ def run(args):
     cifs = read_llm_samples(args.out_path)
     bulks = [cif_to_bulk(cif) for cif in cifs]
     slabs = [bulk_to_slab(bulk) for bulk in bulks]
-    adsorbate = Adsorbate(args.adsorbate)
+    adsorbate = create_adsorbate(args.adsorbate)
     adsorbate_slab_configs = [slab_to_adsorbate_slab_config(slab, adsorbate) for slab in slabs]
     print(adsorbate_slab_configs[0].get_metadata_dict())
     print("Done")
@@ -44,7 +49,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", type=str, required=True)
     parser.add_argument("--model_path", type=str, required=True)
-    parser.add_argument("--num_samples", type=int, default=20)
+    parser.add_argument("--num_samples", type=int, default=3)
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--out_path", type=str, default="")
     parser.add_argument("--temperature", type=float, default=0.9)

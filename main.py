@@ -12,9 +12,9 @@ import os
 #"The material is Ruthenium (Ru)."
 #Creates samples using the llm and saves them to a csv file, out_path
 def create_llm_samples(args):
-    if ".csv" not in out_path:
+    if ".csv" not in args.out_path:
         i = os.environ.get("SLURM_ARRAY_TASK_ID", 0)
-        out_path = os.path.join(out_path, f"samples_{i}.csv") 
+        args.out_path = os.path.join(args.out_path, f"samples_{i}.csv") 
     prompt_llm(args)
 
 #Reads cif files from a csv file, returns a list of cifs

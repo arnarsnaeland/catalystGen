@@ -35,7 +35,7 @@ def run(args):
     cifs = read_llm_samples(args.out_path)
     bulks = [cif_to_bulk(cif) for cif in cifs]
     slabs = [bulk_to_slab(bulk) for bulk in bulks]
-    adsorbate = Adsorbate("N2")
+    adsorbate = Adsorbate(args.adsorbate)
     adsorbate_slab_configs = [slab_to_adsorbate_slab_config(slab, adsorbate) for slab in slabs]
     print(adsorbate_slab_configs[0].get_metadata_dict())
     print("Done")
@@ -50,6 +50,7 @@ if __name__ == "__main__":
     parser.add_argument("--temperature", type=float, default=0.9)
     parser.add_argument("--top_p", type=float, default=0.9)
     parser.add_argument("--instruction_prompt", type=str, default="")
+    parser.add_argument("--adsorbate", type=str, default="")
     args = parser.parse_args()
 
     run(args)

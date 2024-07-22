@@ -12,4 +12,4 @@ export NUMEXPR_NUM_THREADS=1
 export OMP_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 cd ~/master-thesis
-python main.py --model_name=7b --model_path=checkpoint-80000 --instruction_prompt="The material is Fe3O4." --num_samples=20 --ml_model_checkpoint="eq2_153M_ec4_allmd.pt" --batch_size=3
+python src/pkg/main.py --model_name=7b --model_path=checkpoint-80000 --instruction_prompt="The material is Fe3O4." --num_samples=20 --ml_model_checkpoint="eq2_153M_ec4_allmd.pt" --batch_size=3

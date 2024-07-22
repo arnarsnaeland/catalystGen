@@ -8,8 +8,8 @@ from ase.io import read, write
 from ase import Atoms
 from ase.collections import g2
 
-from pkg.modelPrompter import prompt_llm
-from pkg.calculate import setup_calculator, calculate_energy_of_slab
+from modelPrompter import prompt_llm
+from calculate import setup_calculator, calculate_energy_of_slab
 
 #Creates samples using the llm and saves them to a csv file, out_path
 def create_llm_samples(args):

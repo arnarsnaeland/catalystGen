@@ -35,10 +35,20 @@ def create_adsorbate(adsorbate:str)->Adsorbate:
     ads = g2[adsorbate]
     return Adsorbate(ads)
 
-def bulk_to_slab(bulk:Bulk)->list[Slab]:
+def bulks_to_slabs(bulks:Bulk)->list[Slab]:
     #return Slab.from_bulk_get_all_slabs(bulk) #By default gets all slabs up to miller index 2
     #TODO: use commented line above, but for now just get the (1,1,1) slab
-    return Slab.from_bulk_get_specific_millers((1,1,1), bulk)
+    slabs = []
+    for bulk in bulks:
+        try:
+            slabs.append(Slab.from_bulk_get_specific_millers((1,1,1), bulk))
+        except Exception as e:
+            print(e)
+            continue
+    return slabs
+
+        
+        
 
 def slab_to_adsorbate_slab_config(slab:Slab, adsorbate:Adsorbate)->AdsorbateSlabConfig:
     return AdsorbateSlabConfig(slab, adsorbate, mode="random_site_heuristic_placement", num_sites=100)
@@ -53,7 +63,7 @@ def main(args):
     args = create_llm_samples(args)
     cifs = read_llm_samples(args.out_path) 
     bulks = [create_bulk(cif) for cif in cifs]
-    slabs = [bulk_to_slab(bulk) for bulk in bulks] #returns a list of lists of slabs
+    slabs = bulks_to_slabs(bulks) #returns a list of lists of slabs
     adsorbate = create_adsorbate(args.adsorbate)
     adsorbate_slab_configs = [slab_to_adsorbate_slab_config(slab, adsorbate) for list_of_slabs in slabs for slab in list_of_slabs] #Just a nested for loop
     write_to_cif(adsorbate_slab_configs, args.cif_dir)

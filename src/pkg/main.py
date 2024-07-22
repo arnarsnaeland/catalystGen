@@ -17,6 +17,7 @@ def create_llm_samples(args):
         i = os.environ.get("SLURM_JOB_ID", 0)
         args.out_path = os.path.join(args.out_path, f"samples_{i}.csv") 
     prompt_llm(args)
+    return args
 
 #Reads cif files from a csv file, returns a list of cifs
 def read_llm_samples(out_path)->list:
@@ -49,7 +50,7 @@ def write_to_cif(adsorbate_slab_configs:list[AdsorbateSlabConfig], directory:str
         write(os.path.join(directory, f"adsorbate_slab_{i}.cif"), adsorbate_slab_config.get_metadata_dict(0)["adsorbed_slab_atomsobject"])
 
 def main(args):
-    create_llm_samples(args)
+    args = create_llm_samples(args)
     cifs = read_llm_samples(args.out_path) 
     bulks = [create_bulk(cif) for cif in cifs]
     slabs = [bulk_to_slab(bulk) for bulk in bulks] #returns a list of lists of slabs
@@ -68,7 +69,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_path", type=str, required=True)
     parser.add_argument("--adsorbate", type=str, required=True)
     parser.add_argument("--surface_site_sampling_mode", type=str, default="random_site_heuristic_placement")
-    parser.add_argument("--ml-model-checkpoint", type=str, default="eq2_153M_ec4_allmd.pt")
+    parser.add_argument("--ml_model_checkpoint", type=str, default="eq2_153M_ec4_allmd.pt")
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--out_path", type=str, default="")

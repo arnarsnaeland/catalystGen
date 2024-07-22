@@ -12,4 +12,4 @@ export NUMEXPR_NUM_THREADS=1
 export OMP_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 cd ~/master-thesis
-python main.py --model_name=7b --model_path=checkpoint-80000 --instruction_prompt="The material is Ruthenium (Ru)" --adsorbate="N2"
+python main.py --model_name=7b --model_path=checkpoint-80000 --instruction_prompt="" --out_path=samples_7484885.csv

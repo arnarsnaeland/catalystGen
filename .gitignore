@@ -1,11 +1,15 @@
 __pycache__/
+.pytest_cache/
 crystalTextLlm/
 FindItPDF/
 OpenCatalystDataset/
 pdf/
-2606.txt
-notes 2106.txt
+*.txt
 .venv/
 *.out
 checkpoint*
-llm_samples.csv
+cif_files/
+*.traj
+*.cif
+*.csv
+eq2_153M_ec4_allmd.pt

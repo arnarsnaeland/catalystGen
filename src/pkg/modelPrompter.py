@@ -197,7 +197,7 @@ def unconditional_sample(model, tokenizer, args):
                 cif_str = parse_fn(material_str)
                 _ = Structure.from_str(cif_str, fmt="cif")
             except Exception as e:
-                print(e)
+                print(f"Error generating cif: {e}")
                 continue
 
             outputs.append({
@@ -207,8 +207,6 @@ def unconditional_sample(model, tokenizer, args):
 
     df = pd.DataFrame(outputs)
     df.to_csv(args.out_path, index=False)
-
-    return outputs
 
 # Use to prompt llm, only need to provide model name and model path
 def prompt_llm(args):

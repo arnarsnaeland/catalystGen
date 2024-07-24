@@ -8,8 +8,8 @@ def setup_calculator(checkpoint_path:str)->OCPCalculator:
     )
     return calc
 
-def calculate_energy_of_slab(adsorbate_slab, calc):
+def calculate_energy_of_slab(adsorbate_slab, calc, path:str):
     adsorbate_slab.calc = calc
 
-    dyn = LBFGS(adsorbate_slab, trajectory=f"{adsorbate_slab.get_chemical_formula()}.traj")
+    dyn = LBFGS(adsorbate_slab, trajectory=path)
     return dyn.run(0.05, 100)

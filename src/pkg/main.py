@@ -70,27 +70,27 @@ def create_directory(directory:str):
 
 def handle_adsorbate_slab_config(adsorbate_slab_config:AdsorbateSlabConfig, directory:str, calc):
     for i, adsorbate_slab in enumerate(adsorbate_slab_config.atoms_list):
-        directory = os.path.join(directory, f"adsorbate_slab_{i}")
-        create_directory(directory)
-        write(os.path.join(directory, f"adsorbate_slab_{i}.cif"), adsorbate_slab)
-        calculate_energy_of_slab(adsorbate_slab, calc, os.path.join(directory, f"adsorbate_slab_{i}.traj"))
+        dir = os.path.join(directory, f"adsorbate_slab_{i}")
+        create_directory(dir)
+        write(os.path.join(dir, f"adsorbate_slab_{i}.cif"), adsorbate_slab)
+        calculate_energy_of_slab(adsorbate_slab, calc, os.path.join(dir, f"adsorbate_slab_{i}.traj"))
 
 def handle_slabs(slabs:list[Slab], directory:str, adsorbate:Adsorbate, calc):
     for i, slab in enumerate(slabs):
-        directory = os.path.join(directory, f"slab_{i}")
-        create_directory(directory)
-        write(os.path.join(directory, f"slab_{i}.cif"), slab.atoms)
+        dir = os.path.join(directory, f"slab_{i}")
+        create_directory(dir)
+        write(os.path.join(dir, f"slab_{i}.cif"), slab.atoms)
         adsorbate_slab_config = slab_to_adsorbate_slab_config(slab, adsorbate)
-        handle_adsorbate_slab_config(adsorbate_slab_config, directory, calc)
+        handle_adsorbate_slab_config(adsorbate_slab_config, dir, calc)
 
 def handle_bulk(bulks:Bulk, directory:str, adsorbate:Adsorbate, calc):
     for i, bulk in enumerate(bulks):
-        directory = os.path.join(directory, f"bulk_{i}")
-        create_directory(directory)
-        write(os.path.join(directory, f"bulk_{i}.cif"), bulk.atoms)
+        dir = os.path.join(directory, f"bulk_{i}")
+        create_directory(dir)
+        write(os.path.join(dir, f"bulk_{i}.cif"), bulk.atoms)
         slabs = bulk_to_slabs(bulk)
         if slabs:
-            handle_slabs(slabs, directory, adsorbate, calc)
+            handle_slabs(slabs, dir, adsorbate, calc)
 
 def main(args):
     create_llm_samples(args)

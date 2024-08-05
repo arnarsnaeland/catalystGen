@@ -97,7 +97,7 @@ def handle_bulk(bulks:Bulk, directory:str, adsorbate:Adsorbate, calc):
             handle_slabs(slabs, dir, adsorbate, calc)
 
 def main(args):
-    #create_llm_samples(args)
+    create_llm_samples(args)
     atom_obj_list = read_llm_samples(args.out_path) 
     adsorbate = create_adsorbate(args.adsorbate)
 #    for cf, atom_obj_list in atom_obj_dict.items():

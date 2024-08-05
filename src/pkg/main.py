@@ -3,7 +3,7 @@ import os
 import argparse
 import pandas as pd
 
-from ocdata.core import Bulk, Adsorbate, Slab, AdsorbateSlabConfig
+from fairchem.data.oc.core import Bulk, Adsorbate, Slab, AdsorbateSlabConfig
 from ase.io import read, write
 from ase import Atoms
 from ase.collections import g2
@@ -131,16 +131,20 @@ def main(args):
     #write_to_cif(adsorbate_slab_configs, args.cif_dir)
     calc = setup_calculator(args.ml_model_checkpoint)
     
+    database_utils.write_adsorbate_slab_configs_to_db(adsorbate_slab_configs, adsorbate_slab_db, relaxed=False)
+    
+    relaxed_adsorbate_slab_configs = []
     
     for adsorbate_slab_config in adsorbate_slab_configs:
-        bulk = adsorbate_slab_config.slab.bulk
+        bulk_id = adsorbate_slab_config.slab.bulk.db_id
         slab_id = adsorbate_slab_config.slab.db_id
         os.makedirs(os.path.join(args.cif_dir, f"{bulk}_slab{slab_id}"), exist_ok=True)
-        for i, atom_obj in enumerate(adsorbate_slab_config.atoms_list):
-            calculate_energy_of_slab(atom_obj, calc, os.path.join(args.cif_dir, f"{bulk}_slab{slab_id}/{i}.traj"))
-            atom_obj.get_potential_energy()
+        for atom_obj in adsorbate_slab_config.atoms_list:
+            traj_path = os.path.join(args.cif_dir, f"bulk{bulk_id}_slab{slab_id}/adslab{atom_obj.db_id}.traj")
+            relaxed_adsorbate_slab_configs.append(calculate_energy_of_slab(atom_obj, calc, traj_path))
     
-    database_utils.write_adsorbate_slab_configs_to_db(adsorbate_slab_configs, adsorbate_slab_db)
+    database_utils.write_adsorbate_slab_configs_to_db(relaxed_adsorbate_slab_configs, adsorbate_slab_db, relaxed=True)
+    
     print("Done")
 
 

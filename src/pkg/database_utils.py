@@ -16,10 +16,9 @@ def write_slabs_to_db(slabs, db):
 def write_adsorbate_slab_configs_to_db(adsorbate_slab_configs, db, relaxed):
     with db as db:
         if relaxed:
-            for adsorbate_slab_config in adsorbate_slab_configs:
-                for atom_obj in adsorbate_slab_config.atoms_list:
-                    id = db.write(atom_obj, bulk_id=adsorbate_slab_config.slab.bulk.db_id, slab_id=adsorbate_slab_config.slab.db_id, relaxed=relaxed, relaxed_id=adsorbate_slab_config.not_relaxed_id)
-                    atom_obj.db_id = id
+            for atom_obj in adsorbate_slab_config.atoms_list:
+                id = db.write(atom_obj, bulk_id=adsorbate_slab_config.slab.bulk.db_id, slab_id=adsorbate_slab_config.slab.db_id, relaxed=relaxed, relaxed_id=adsorbate_slab_config.not_relaxed_id)
+                atom_obj.db_id = id
         else:    
             for adsorbate_slab_config in adsorbate_slab_configs:
                 for atom_obj in adsorbate_slab_config.atoms_list:

@@ -146,7 +146,7 @@ def main(args):
             relaxed_adslab.bulk_id = bulk_id
             relaxed_adslab.slab_id = slab_id
             relaxed_adslab.adslab_id = atom_obj.db_id
-            relaxed_adslabs.append()
+            relaxed_adslabs.append(relaxed_adslab)
     
     database_utils.write_adsorbate_slab_configs_to_db(relaxed_adslabs, adsorbate_slab_db)
     

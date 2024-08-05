@@ -148,7 +148,7 @@ def main(args):
             relaxed_adslab.adslab_id = atom_obj.db_id
             relaxed_adslabs.append(relaxed_adslab)
     
-    database_utils.write_adsorbate_slab_configs_to_db(relaxed_adslabs, adsorbate_slab_db)
+    database_utils.write_adsorbate_slabs_to_db(relaxed_adslabs, adsorbate_slab_db)
     
     print("Done")
 

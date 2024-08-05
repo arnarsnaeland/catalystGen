@@ -13,14 +13,14 @@ def write_slabs_to_db(slabs, db):
                 id = db.write(slab.atoms, bulk_id=slab.bulk.db_id)
                 slab.db_id = id
             
-def write_adsorbate_slab_configs_to_db(adsorbate_slab_configs, db, relaxed):
+def write_adsorbate_slab_configs_to_db(adsorbate_slab_configs, db):
     with db as db:
-        if relaxed:
+        for adsorbate_slab_config in adsorbate_slab_configs:
             for atom_obj in adsorbate_slab_config.atoms_list:
-                id = db.write(atom_obj, bulk_id=adsorbate_slab_config.slab.bulk.db_id, slab_id=adsorbate_slab_config.slab.db_id, relaxed=relaxed, relaxed_id=adsorbate_slab_config.not_relaxed_id)
+                id = db.write(atom_obj, bulk_id=adsorbate_slab_config.slab.bulk.db_id, slab_id=adsorbate_slab_config.slab.db_id, relaxed=False)
                 atom_obj.db_id = id
-        else:    
-            for adsorbate_slab_config in adsorbate_slab_configs:
-                for atom_obj in adsorbate_slab_config.atoms_list:
-                    id = db.write(atom_obj, bulk_id=adsorbate_slab_config.slab.bulk.db_id, slab_id=adsorbate_slab_config.slab.db_id, relaxed=relaxed)
-                    atom_obj.db_id = id
+                
+def write_adsorbate_slabs_to_db(adslabs, db):
+    with db as db:
+        for adslab in adslabs:
+            db.write(adslab, bulk_id=adslab.bulk_id, slab_id=adslab.slab_id, adslab_id=adslab.adslab_id, relaxed=True)

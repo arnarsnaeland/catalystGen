@@ -134,7 +134,7 @@ def main(args):
     
     database_utils.write_adsorbate_slab_configs_to_db(adsorbate_slab_configs, adsorbate_slab_db, relaxed=False)
     
-    relaxed_adsorbate_slab_configs = []
+    relaxed_adslabs = []
     
     for adsorbate_slab_config in adsorbate_slab_configs:
         bulk_id = adsorbate_slab_config.slab.bulk.db_id
@@ -142,9 +142,13 @@ def main(args):
         os.makedirs(os.path.join(args.cif_dir, f"bulk{bulk_id}_slab{slab_id}"), exist_ok=True)
         for atom_obj in adsorbate_slab_config.atoms_list:
             traj_path = os.path.join(args.cif_dir, f"bulk{bulk_id}_slab{slab_id}/adslab{atom_obj.db_id}.traj")
-            relaxed_adsorbate_slab_configs.append(calculate_energy_of_slab(atom_obj, calc, traj_path))
+            relaxed_adslab = calculate_energy_of_slab(atom_obj, calc, traj_path)
+            relaxed_adslab.bulk_id = bulk_id
+            relaxed_adslab.slab_id = slab_id
+            relaxed_adslab.adslab_id = atom_obj.db_id
+            relaxed_adslabs.append()
     
-    database_utils.write_adsorbate_slab_configs_to_db(relaxed_adsorbate_slab_configs, adsorbate_slab_db, relaxed=True)
+    database_utils.write_adsorbate_slab_configs_to_db(relaxed_adslabs, adsorbate_slab_db)
     
     print("Done")
 

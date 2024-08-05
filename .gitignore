@@ -12,4 +12,5 @@ cif_files/
 *.traj
 *.cif
 *.csv
-eq2_153M_ec4_allmd.pt
+*.pt
+*.db

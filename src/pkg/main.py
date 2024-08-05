@@ -7,9 +7,11 @@ from ocdata.core import Bulk, Adsorbate, Slab, AdsorbateSlabConfig
 from ase.io import read, write
 from ase import Atoms
 from ase.collections import g2
+from ase.db import connect
 
 from modelPrompter import prompt_llm
 from calculate import setup_calculator, calculate_energy_of_slab
+import database_utils
 
 ADSORBATE = None
 CALC = None
@@ -25,15 +27,17 @@ def create_llm_samples(args):
 #Reads cif files from a csv file, returns a list of cifs
 def read_llm_samples(out_path)->list:
     samples = pd.read_csv(out_path, usecols=['cif'])['cif'].tolist()
-    atom_obj_dict = {}
+    #atom_obj_dict = {}
+    atom_obj_list = []
     for sample in samples:
         atom_obj = read(io.StringIO(sample), ':', 'cif')[0]
-        if sample not in atom_obj_dict:
-            atom_obj_dict[atom_obj.get_chemical_formula()] = [read(io.StringIO(sample), ':', 'cif')[0]]
-        else:
-            atom_obj_dict[atom_obj.get_chemical_formula()].append(read(io.StringIO(sample), ':', 'cif')[0])
+        atom_obj_list.append(atom_obj)
+        #if sample not in atom_obj_dict:
+        #    atom_obj_dict[atom_obj.get_chemical_formula()] = [read(io.StringIO(sample), ':', 'cif')[0]]
+        #else:
+        #    atom_obj_dict[atom_obj.get_chemical_formula()].append(read(io.StringIO(sample), ':', 'cif')[0])
     #write(f"sample.traj", atom_obj_list, format="traj") #Write to traj file, TODO: remove this line
-    return atom_obj_dict
+    return atom_obj_list
 
 def create_bulk(atoms:Atoms)->Bulk:
     return Bulk(bulk_atoms=atoms)
@@ -56,7 +60,7 @@ def bulk_to_slabs(bulk:Bulk)->list[Slab]:
         
 
 def slab_to_adsorbate_slab_config(slab:Slab, adsorbate:Adsorbate)->AdsorbateSlabConfig:
-    return AdsorbateSlabConfig(slab, adsorbate, mode="random_site_heuristic_placement", num_sites=100)
+    return AdsorbateSlabConfig(slab, adsorbate, mode="random_site_heuristic_placement", num_sites=4)
 
 def write_to_cif(adsorbate_slab_configs:list[AdsorbateSlabConfig], directory:str):
     if not os.path.exists(directory):
@@ -93,24 +97,50 @@ def handle_bulk(bulks:Bulk, directory:str, adsorbate:Adsorbate, calc):
             handle_slabs(slabs, dir, adsorbate, calc)
 
 def main(args):
-    create_llm_samples(args)
-    atom_obj_dict = read_llm_samples(args.out_path) 
+    #create_llm_samples(args)
+    atom_obj_list = read_llm_samples(args.out_path) 
     adsorbate = create_adsorbate(args.adsorbate)
-    print(atom_obj_dict)
-    calc = setup_calculator(args.ml_model_checkpoint)
-    for cf, atom_obj_list in atom_obj_dict.items():
-        directory = os.path.join(args.cif_dir, cf)
-        bulks = []
-        for atom_obj in atom_obj_list:
-            bulks.append(create_bulk(atom_obj))
-        handle_bulk(bulks, directory, adsorbate, calc)
+#    for cf, atom_obj_list in atom_obj_dict.items():
+#        directory = os.path.join(args.cif_dir, cf)
+#        bulks = []
+#        for atom_obj in atom_obj_list:
+#            bulks.append(create_bulk(atom_obj))
+#        handle_bulk(bulks, directory, adsorbate, calc)
     
-    #bulks = [create_bulk(cif) for cif in cifs]
-    #slabs = bulks_to_slabs(bulks) #returns a list of lists of slabs
-    #adsorbate_slab_configs = [slab_to_adsorbate_slab_config(slab, adsorbate) for list_of_slabs in slabs for slab in list_of_slabs] #Just a nested for loop
+    bulks = [create_bulk(atom_obj) for atom_obj in atom_obj_list]
+    
+    
+    bulk_db = connect("bulk.db")
+    slab_db = connect("slab.db")
+    adsorbate_slab_db = connect("adsorbate_slab.db")
+
+    database_utils.write_bulks_to_db(bulks, bulk_db)
+    
+    for bulk in bulks:
+        bulk.slabs = bulk_to_slabs(bulk)
+        for slab in bulk.slabs:
+            slab.adsorbate_slab_configs = slab_to_adsorbate_slab_config(slab, adsorbate)
+    #slabs = [bulk_to_slabs(bulk) for bulk in bulks] #returns a list of lists of slabs
+    
+    slabs = [bulk.slabs for bulk in bulks]
+    database_utils.write_slabs_to_db(slabs, slab_db)
+    
+    adsorbate_slab_configs = [slab_to_adsorbate_slab_config(slab, adsorbate) for list_of_slabs in slabs for slab in list_of_slabs] #Just a nested for loop
+    
+    
     #write_to_cif(adsorbate_slab_configs, args.cif_dir)
-    #calc = setup_calculator(args.ml_model_checkpoint)
-    #calculate_energy_of_slab(adsorbate_slab_configs[0].atoms_list[0], calc)
+    calc = setup_calculator(args.ml_model_checkpoint)
+    
+    
+    for adsorbate_slab_config in adsorbate_slab_configs:
+        bulk = adsorbate_slab_config.slab.bulk
+        slab_id = adsorbate_slab_config.slab.db_id
+        os.makedirs(os.path.join(args.cif_dir, f"{bulk}_slab{slab_id}"), exist_ok=True)
+        for i, atom_obj in enumerate(adsorbate_slab_config.atoms_list):
+            calculate_energy_of_slab(atom_obj, calc, os.path.join(args.cif_dir, f"{bulk}_slab{slab_id}/{i}.traj"))
+            atom_obj.get_potential_energy()
+    
+    database_utils.write_adsorbate_slab_configs_to_db(adsorbate_slab_configs, adsorbate_slab_db)
     print("Done")
 
 

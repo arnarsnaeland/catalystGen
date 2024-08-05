@@ -1,5 +1,5 @@
 from ase.optimize import LBFGS
-from fairchem.core import OCPCalculator
+from fairchem.core import OCPCalculator 
 
 def setup_calculator(checkpoint_path:str)->OCPCalculator:
     calc = OCPCalculator(
@@ -12,4 +12,4 @@ def calculate_energy_of_slab(adsorbate_slab, calc, path:str):
     adsorbate_slab.calc = calc
 
     dyn = LBFGS(adsorbate_slab, trajectory=path)
-    return dyn.run(0.05, 100)
+    dyn.run(0.2, 100)

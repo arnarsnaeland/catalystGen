@@ -138,7 +138,7 @@ def main(args):
     for adsorbate_slab_config in adsorbate_slab_configs:
         bulk_id = adsorbate_slab_config.slab.bulk.db_id
         slab_id = adsorbate_slab_config.slab.db_id
-        os.makedirs(os.path.join(args.cif_dir, f"{bulk}_slab{slab_id}"), exist_ok=True)
+        os.makedirs(os.path.join(args.cif_dir, f"bulk{bulk_id}_slab{slab_id}"), exist_ok=True)
         for atom_obj in adsorbate_slab_config.atoms_list:
             traj_path = os.path.join(args.cif_dir, f"bulk{bulk_id}_slab{slab_id}/adslab{atom_obj.db_id}.traj")
             relaxed_adsorbate_slab_configs.append(calculate_energy_of_slab(atom_obj, calc, traj_path))

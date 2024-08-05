@@ -132,7 +132,7 @@ def main(args):
     #write_to_cif(adsorbate_slab_configs, args.cif_dir)
     calc = setup_calculator(args.ml_model_checkpoint)
     
-    database_utils.write_adsorbate_slab_configs_to_db(adsorbate_slab_configs, adsorbate_slab_db, relaxed=False)
+    database_utils.write_adsorbate_slab_configs_to_db(adsorbate_slab_configs, adsorbate_slab_db)
     
     relaxed_adslabs = []
     

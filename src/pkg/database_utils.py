@@ -1,17 +1,15 @@
 from ase.db import connect
 
-def write_bulks_to_db(bulks, db):
+def write_bulk_to_db(bulk, db):
     with db as db:
-        for bulk in bulks:
-            id = db.write(bulk.atoms)
-            bulk.db_id = id
+        id = db.write(bulk.atoms)
+        bulk.db_id = id
             
 def write_slabs_to_db(slabs, db):
     with db as db:
-        for slab_list in slabs:
-            for slab in slab_list:
-                id = db.write(slab.atoms, bulk_id=slab.bulk.db_id)
-                slab.db_id = id
+        for slab in slabs:
+            id = db.write(slab.atoms, bulk_id=slab.bulk.db_id)
+            slab.db_id = id
             
 def write_adsorbate_slab_configs_to_db(adsorbate_slab_configs, db):
     with db as db:

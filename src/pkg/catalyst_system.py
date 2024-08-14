@@ -62,7 +62,6 @@ class CatalystSystem:
                 relaxed_adslab.slab_id = slab_id
                 relaxed_adslab.adslab_id = atom_obj.db_id
                 self.relaxed_adslabs.append(relaxed_adslab)
-                adsorbate_slab_config.atoms_list = calculate.calculate_energy_of_slab(adsorbate_slab_config, calc, path)
     
     def write_relaxed_adsorbate_slabs_to_db(self, db):
         database_utils.write_adsorbate_slabs_to_db(self.relaxed_adslabs, db)            

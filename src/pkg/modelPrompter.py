@@ -14,7 +14,8 @@ from transformers import (
 from peft import PeftModel
 from pymatgen.core import Structure, Element
 from pymatgen.core.lattice import Lattice
-from bitsandbytes import BitsAndBytesConfig
+import torch
+#from bitsandbytes import BitsAndBytesConfig
 
 MAX_LENGTH = 2048
 DEFAULT_PAD_TOKEN = "[PAD]"
@@ -120,12 +121,13 @@ def prepare_model_and_tokenizer(model_name, model_path):
     model_string = llama2_model_string(model_size, is_chat)
     print(f"Using model: {model_string}")
     
-    quantization_config = BitsAndBytesConfig(load_in_8bit = True)
+    #quantization_config = BitsAndBytesConfig(load_in_8bit = True)
     model = LlamaForCausalLM.from_pretrained(
         model_string,
-        #load_in_8bit=True,
+        load_in_8bit=True,
         device_map="auto",
-        quantization_config=quantization_config,
+        torch_dtype=torch.bfloat16
+        #quantization_config=quantization_config,
     )
 
     tokenizer = LlamaTokenizer.from_pretrained(

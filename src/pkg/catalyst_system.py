@@ -30,15 +30,17 @@ class CatalystSystem:
     ):
         self.bulk = Bulk(bulk_atoms=bulk_atoms)
         self.slabs = self.bulk_to_slabs(self.bulk)
+        if self.slabs is None:
+            return None
         self.adsorbate_slab_configs = [self.slab_to_adsorbate_slab_config(slab, adsorbate, mode, num_sites, num_augmentations_per_site) for slab in self.slabs]
         self.relaxed_adslabs = []
    
    
     def bulk_to_slabs(self, bulk:Bulk)->list[Slab]:
-        #return Slab.from_bulk_get_all_slabs(bulk) #By default gets all slabs up to miller index 2
+        # Slab.from_bulk_get_specific_millers((1,1,1), bulk)
         #TODO: use commented line above, but for now just get the (1,1,1) slab
         try:
-            return Slab.from_bulk_get_specific_millers((1,1,1), bulk)
+            return Slab.from_bulk_get_all_slabs(bulk) #By default gets all slabs up to miller index 2
         except Exception as e:
             print("Error creating slab from bulk")
             print(e)

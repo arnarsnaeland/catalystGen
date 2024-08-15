@@ -48,7 +48,9 @@ def main(args):
     adsorbate = create_adsorbate(args.adsorbate)
     calc = setup_calculator(args.ml_model_checkpoint)
     cs = [CatalystSystem(atom_obj, adsorbate, args.surface_site_sampling_mode) for atom_obj in atom_obj_list]
-        
+    
+    #If any of the CatalystSystems did not manage to create valid slabs, remove them from the list
+    cs = [i for i in cs if i is not None]
     
     
     bulk_db = connect("bulk.db")

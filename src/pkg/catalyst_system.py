@@ -1,9 +1,7 @@
 import os
 
 from fairchem.data.oc.core import Bulk, Adsorbate, Slab, AdsorbateSlabConfig
-from ase.io import read, write
 from ase import Atoms
-from ase.collections import g2
 
 import database_utils, calculate
 

@@ -107,6 +107,7 @@ if __name__ == "__main__":
     cs = main(args)
     
     if args.distributed:
+        print("Running distributed")
         multiprocessing.set_start_method("forkserver")
         gpu_ids = range(cuda.runtime.getDeviceCount())
         with multiprocessing.Pool(args.num_gpus) as pool:

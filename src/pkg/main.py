@@ -83,14 +83,15 @@ def compute_energy(catalyst_system):
     
 
 class Worker(multiprocessing.Process):
-    def __init__(self, gpu_id, system):
+    def __init__(self, batch):
         super().__init__()
-        self.gpu_id = gpu_id
-        self.system = system
+        self.cs = batch[0]
+        self.gpu_id = batch[1]
     def run(self):
         with cuda.Device(self.gpu_id):
-            print(f"Running on GPU {self.gpu_id}, computing for bulk{self.system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{self.system.adsorbate_slab_configs[0].slab.db_id}")
-            compute_energy(self.system)
+            for system in self.cs:
+                print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
+                compute_energy(system)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -116,8 +117,11 @@ if __name__ == "__main__":
     if args.distributed:
         print("Running distributed")
         multiprocessing.set_start_method("forkserver")
-        gpu_ids = range(cuda.runtime.getDeviceCount())
-        workers = [Worker(gpu_id) for gpu_id in gpu_ids]
+        gpu_ids = range(args.num_gpus)
+        batch_size = len(cs) // len(gpu_ids)
+        cs = [cs[i:i + batch_size] for i in range(0, len(cs), batch_size)]
+        batches = zip(cs, gpu_ids)
+        workers = [Worker(batch) for batch in batches]
         for worker in workers:
             worker.start()
         for worker in workers:

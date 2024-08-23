@@ -2,6 +2,10 @@ import io
 import os
 import argparse
 import pandas as pd
+import submitit
+import multiprocessing
+import cupy
+from cupy import cuda
 
 from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig
 from ase.io import read, write
@@ -52,17 +56,32 @@ def main(args):
     #If any of the CatalystSystems did not manage to create valid slabs, remove them from the list
     cs = [i for i in cs if i is not None]
     
+
     
     bulk_db = connect("bulk.db")
     slab_db = connect("slab.db")
-    adsorbate_slab_db = connect("adsorbate_slab.db")
+
     
     for system in cs:
-        system.write_to_db(bulk_db, slab_db, adsorbate_slab_db)
-        system.relax_adsorbate_slabs(calc, args.cif_dir)
-        system.write_relaxed_adsorbate_slabs_to_db(adsorbate_slab_db)
+        system.write_to_db(bulk_db, slab_db)
+        for adsorbate_slab_config in system.adsorbate_slab_configs:
+            adsorbate_slab_config.calc = calc
+            adsorbate_slab_config.path = args.traj_dir
+    
+    return cs
+    #if args.distributed:
+    #    executor = submitit.AutoExecutor(folder="logs")
 
-    print("Done")
+    #for system in cs:   
+    #    system.relax_adsorbate_slabs(calc, args.cif_dir)
+    #    system.write_relaxed_adsorbate_slabs_to_db(adsorbate_slab_db)
+    #print("Done")
+    
+def compute_energy(catalyst_system):
+    adsorbate_slab_db = connect("adsorbate_slab.db")
+    catalyst_system.relax_adsorbate_slabs(adsorbate_slab_db)
+    return catalyst_system
+    
 
 
 
@@ -76,10 +95,22 @@ if __name__ == "__main__":
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--out_path", type=str, default="")
-    parser.add_argument("--cif_dir", type=str, default="cif_files")
+    parser.add_argument("--traj_dir", type=str, default="traj_files")
     parser.add_argument("--temperature", type=float, default=0.9)
     parser.add_argument("--top_p", type=float, default=0.9)
     parser.add_argument("--instruction_prompt", type=str, default="")
+    parser.add_argument("--slurm_partition", type=str)
+    parser.add_argument("--distributed", type=bool, default=False)
+    parser.add_argument("--num_gpus", type=int, default=1)
     args = parser.parse_args()
-
-    main(args)
+    
+    cs = main(args)
+    
+    if args.distributed:
+        multiprocessing.set_start_method("forkserver")
+        gpu_ids = range(cuda.runtime.getDeviceCount())
+        with multiprocessing.Pool(args.num_gpus) as pool:
+            pool.map(compute_energy, cs)
+    else:
+        for system in cs:
+            compute_energy(system)

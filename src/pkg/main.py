@@ -64,9 +64,9 @@ def main(args):
     
     for system in cs:
         system.write_to_db(bulk_db, slab_db)
+        system.set_path(args.traj_dir)
         for adsorbate_slab_config in system.adsorbate_slab_configs:
             adsorbate_slab_config.calc = calc
-            adsorbate_slab_config.set_path(args.traj_dir)
     
     return cs
     #if args.distributed:

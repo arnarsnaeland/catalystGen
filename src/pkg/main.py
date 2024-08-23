@@ -2,7 +2,6 @@ import io
 import os
 import argparse
 import pandas as pd
-import submitit
 import multiprocessing
 import cupy
 from cupy import cuda

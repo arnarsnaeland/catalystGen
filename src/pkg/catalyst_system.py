@@ -29,13 +29,16 @@ class CatalystSystem:
         num_augmentations_per_site: int = 1,
     ):
         self.path = None
+        self.calc = None
         self.bulk = Bulk(bulk_atoms=bulk_atoms)
         self.slabs = self.bulk_to_slabs(self.bulk)
         if self.slabs is None:
             return None
         self.adsorbate_slab_configs = [self.slab_to_adsorbate_slab_config(slab, adsorbate, mode, num_sites, num_augmentations_per_site) for slab in self.slabs]
    
-   
+    def set_calculator(self, calc):
+        self.calc = calc
+        
     def set_path(self, path:str):
         self.path = path
 
@@ -63,7 +66,7 @@ class CatalystSystem:
             for i, atom_obj in enumerate(adsorbate_slab_config.atoms_list):
                 traj_path = os.path.join(self.path, f"bulk{bulk_id}_slab{slab_id}/adslab{i}.traj")
                 try:
-                    relaxed_adslab = calculate.calculate_energy_of_slab(atom_obj, traj_path)
+                    relaxed_adslab = calculate.calculate_energy_of_slab(atom_obj, traj_path, self.calc)
                 except Exception as e:
                     print(f"Error relaxing adsorbate slab bulk{bulk_id},slab{slab_id},adslab{i}: {e}")
                     continue

@@ -6,6 +6,7 @@ import submitit
 import multiprocessing
 import cupy
 from cupy import cuda
+import numpy as np
 
 from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig
 from ase.io import read, write
@@ -75,11 +76,15 @@ def main(args):
     #    system.relax_adsorbate_slabs(calc, args.cif_dir)
     #    system.write_relaxed_adsorbate_slabs_to_db(adsorbate_slab_db)
     #print("Done")
-    
+  
 def compute_energy(catalyst_system):
     adsorbate_slab_db = connect("adsorbate_slab.db")
     catalyst_system.relax_adsorbate_slabs(adsorbate_slab_db)
     return catalyst_system
+
+#Split a list into n batches as evenly as possible    
+def batched(lst, num_batches):
+    return np.array_split(lst, num_batches)
     
 
 class Worker(multiprocessing.Process):
@@ -118,8 +123,7 @@ if __name__ == "__main__":
         print("Running distributed")
         multiprocessing.set_start_method("forkserver")
         gpu_ids = range(args.num_gpus)
-        batch_size = len(cs) // len(gpu_ids)
-        cs = [cs[i:i + batch_size] for i in range(0, len(cs), batch_size)]
+        cs = batched(cs, args.num_gpus)
         batches = zip(cs, gpu_ids)
         workers = [Worker(batch) for batch in batches]
         for worker in workers:

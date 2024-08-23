@@ -82,7 +82,15 @@ def compute_energy(catalyst_system):
     return catalyst_system
     
 
-
+class Worker(multiprocessing.Process):
+    def __init__(self, gpu_id, system):
+        super().__init__()
+        self.gpu_id = gpu_id
+        self.system = system
+    def run(self):
+        with cuda.Device(self.gpu_id):
+            print(f"Running on GPU {self.gpu_id}, computing for bulk{self.system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{self.system.adsorbate_slab_configs[0].slab.db_id}")
+            compute_energy(self.system)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -109,8 +117,11 @@ if __name__ == "__main__":
         print("Running distributed")
         multiprocessing.set_start_method("forkserver")
         gpu_ids = range(cuda.runtime.getDeviceCount())
-        with multiprocessing.Pool(args.num_gpus) as pool:
-            pool.map(compute_energy, cs)
+        workers = [Worker(gpu_id) for gpu_id in gpu_ids]
+        for worker in workers:
+            worker.start()
+        for worker in workers:
+            worker.join()
     else:
         for system in cs:
             compute_energy(system)

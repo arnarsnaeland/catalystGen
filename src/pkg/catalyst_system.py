@@ -64,9 +64,10 @@ class CatalystSystem:
             os.makedirs(os.path.join(self.path, f"bulk{bulk_id}_slab{slab_id}"), exist_ok=True)
             relaxed_adslabs = []
             for i, atom_obj in enumerate(adsorbate_slab_config.atoms_list):
+                log_path = os.path.join(self.path, f"bulk{bulk_id}_slab{slab_id}/adslab{i}.txt")
                 traj_path = os.path.join(self.path, f"bulk{bulk_id}_slab{slab_id}/adslab{i}.traj")
                 try:
-                    relaxed_adslab = calculate.calculate_energy_of_slab(atom_obj, traj_path, self.calc)
+                    relaxed_adslab = calculate.calculate_energy_of_slab(atom_obj, traj_path, log_path, self.calc)
                 except Exception as e:
                     print(f"Error relaxing adsorbate slab bulk{bulk_id},slab{slab_id},adslab{i}: {e}")
                     continue

@@ -116,11 +116,12 @@ if __name__ == "__main__":
     parser.add_argument("--num_gpus", type=int, default=1)
     args = parser.parse_args()
     
+    
     cs = main(args)
     
     if args.distributed:
         print("Running distributed")
-        multiprocessing.set_start_method("forkserver")
+        multiprocessing.set_start_method("forkserver", force=True)
         gpu_ids = range(args.num_gpus)
         cs = batched(cs, args.num_gpus)
         batches = zip(cs, gpu_ids)

@@ -93,6 +93,7 @@ class Worker(multiprocessing.Process):
         self.gpu_id = batch[1]
     def run(self):
         with cuda.Device(self.gpu_id):
+            print(f"Running on GPU {self.gpu_id}")
             for system in self.cs:
                 print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
                 compute_energy(system)
@@ -121,7 +122,8 @@ if __name__ == "__main__":
     
     if args.distributed:
         print("Running distributed")
-        multiprocessing.set_start_method("forkserver", force=True)
+        print(cuda.runtime.getDeviceCount())
+        multiprocessing.set_start_method("spawn", force=True)
         gpu_ids = range(args.num_gpus)
         cs = batched(cs, args.num_gpus)
         batches = zip(cs, gpu_ids)
@@ -130,6 +132,6 @@ if __name__ == "__main__":
             worker.start()
         for worker in workers:
             worker.join()
-    else:
+    else: #Run on single gpu
         for system in cs:
             compute_energy(system)

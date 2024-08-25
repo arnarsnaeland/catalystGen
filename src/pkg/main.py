@@ -125,9 +125,14 @@ if __name__ == "__main__":
         print(cuda.runtime.getDeviceCount())
         multiprocessing.set_start_method("spawn", force=True)
         gpu_ids = range(args.num_gpus)
+        print(f"number of systems: {len(cs)}")
         cs = batched(cs, args.num_gpus)
+        print(f"number of batches: {len(cs)}")
         batches = zip(cs, gpu_ids)
+        print(f"number of batches: {len(batches)}")
+        print(batches)
         workers = [Worker(batch) for batch in batches]
+        print(f"number of workers: {len(workers)}")
         for worker in workers:
             worker.start()
         for worker in workers:

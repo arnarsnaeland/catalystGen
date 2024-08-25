@@ -93,7 +93,7 @@ class Worker(multiprocessing.Process):
         self.gpu_id = batch[1]
     def run(self):
         with cuda.Device(self.gpu_id):
-            print(f"Running on GPU {self.gpu_id}")
+            print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).mem_info / 1024**3:.2f} GB of memory")
             for system in self.cs:
                 print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
                 compute_energy(system)

@@ -87,16 +87,21 @@ def batched(lst, num_batches):
     
 
 class Worker(multiprocessing.Process):
-    def __init__(self, batch):
+    def __init__(self, queue, gpu_id):
         super().__init__()
-        self.cs = batch[0]
-        self.gpu_id = batch[1]
+        self.gpu_id = gpu_id
+        self.queue = queue
     def run(self):
         with cuda.Device(self.gpu_id):
-            print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).mem_info / 1024**3:.2f} GB of memory")
-            for system in self.cs:
-                print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
-                compute_energy(system)
+            print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).mem_info} memory")
+            while True:
+                try:
+                    system = self.queue.get_nowait()
+                    print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
+                    compute_energy(system)
+                except multiprocessing.Queue.Empty:
+                    break
+        print(f"Worker {self.gpu_id} finished")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -124,12 +129,12 @@ if __name__ == "__main__":
         print("Running distributed")
         print(cuda.runtime.getDeviceCount())
         multiprocessing.set_start_method("spawn", force=True)
+        queue = multiprocessing.Queue()
         gpu_ids = range(args.num_gpus)
         print(f"number of systems: {len(cs)}")
-        cs = batched(cs, args.num_gpus)
-        print(f"number of batches: {len(cs)}")
-        batches = zip(cs, gpu_ids)
-        workers = [Worker(batch) for batch in batches]
+        for system in cs:
+            queue.put(system)
+        workers = [Worker(queue, i) for i in gpu_ids]
         print(f"number of workers: {len(workers)}")
         for worker in workers:
             print(f"starting worker {worker.gpu_id}")

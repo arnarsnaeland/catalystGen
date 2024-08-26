@@ -6,7 +6,6 @@ import torch.multiprocessing as multiprocessing
 from queue import Empty
 import cupy
 from cupy import cuda
-import numpy as np
 import torch
 
 from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig
@@ -59,8 +58,8 @@ def main(args):
     
 
     
-    bulk_db = connect("bulk-dist.db")
-    slab_db = connect("slab-dist.db")
+    bulk_db = connect("bulk.db")
+    slab_db = connect("slab.db")
     
     calc = None
     if not args.distributed:
@@ -74,22 +73,11 @@ def main(args):
                 system.set_calculator(calc)
     
     return cs
-    #if args.distributed:
-    #    executor = submitit.AutoExecutor(folder="logs")
-
-    #for system in cs:   
-    #    system.relax_adsorbate_slabs(calc, args.cif_dir)
-    #    system.write_relaxed_adsorbate_slabs_to_db(adsorbate_slab_db)
-    #print("Done")
   
 def compute_energy(catalyst_system):
-    adsorbate_slab_db = connect("adsorbate_slab_dist.db")
+    adsorbate_slab_db = connect("adsorbate_slab.db")
     catalyst_system.relax_adsorbate_slabs(adsorbate_slab_db)
     return catalyst_system
-
-#Split a list into n batches as evenly as possible    
-def batched(lst, num_batches):
-    return np.array_split(lst, num_batches)
     
 
 class Worker(multiprocessing.Process):
@@ -114,7 +102,7 @@ class Worker(multiprocessing.Process):
             except Empty:
                 print(f"Worker {self.gpu_id} found empty queue")
                 break
-    print(f"Worker {self.gpu_id} finished")
+        print(f"Worker {self.gpu_id} finished")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -51,7 +51,7 @@ def main(args):
         create_llm_samples(args)
     atom_obj_list = read_llm_samples(args.out_path) 
     adsorbate = create_adsorbate(args.adsorbate)
-    calc = setup_calculator(args.ml_model_checkpoint)
+    #calc = setup_calculator(args.ml_model_checkpoint)
     cs = [CatalystSystem(atom_obj, adsorbate, args.surface_site_sampling_mode) for atom_obj in atom_obj_list]
     
     #If any of the CatalystSystems did not manage to create valid slabs, remove them from the list
@@ -94,11 +94,14 @@ class Worker(multiprocessing.Process):
         self.queue = queue
     def run(self):
         with cuda.Device(self.gpu_id):
-            print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).mem_info} memory")
+            print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).pci_bus_id}")
+            
             while True:
                 try:
                     system = self.queue.get(timeout=10)
                     print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
+                    system.set_calculator(setup_calculator("eq2_153M_ec4_allmd.pt"))
+                    print(system.calc.config)
                     compute_energy(system)
                 except Empty:
                     print(f"Worker {self.gpu_id} found empty queue")

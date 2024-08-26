@@ -5,6 +5,7 @@ from ase.io import read
 def setup_calculator(checkpoint_path:str)->OCPCalculator:
     calc = OCPCalculator(
         checkpoint_path=checkpoint_path,
+        trainer="forces",
         cpu=False
     )
     return calc

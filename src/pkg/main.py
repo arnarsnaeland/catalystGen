@@ -2,11 +2,12 @@ import io
 import os
 import argparse
 import pandas as pd
-import multiprocessing
+import torch.multiprocessing as multiprocessing
 from queue import Empty
 import cupy
 from cupy import cuda
 import numpy as np
+import torch
 
 from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig
 from ase.io import read, write
@@ -96,21 +97,24 @@ class Worker(multiprocessing.Process):
         super().__init__()
         self.gpu_id = gpu_id
         self.queue = queue
+        self.calc = setup_calculator("eq2_153M_ec4_allmd.pt")
+        
     def run(self):
-        with cuda.Device(self.gpu_id):
-            print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).pci_bus_id}")
-            
-            while True:
-                try:
-                    system = self.queue.get(timeout=10)
-                    print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
-                    system.set_calculator(setup_calculator("eq2_153M_ec4_allmd.pt"))
-                    print(system.calc.config)
-                    compute_energy(system)
-                except Empty:
-                    print(f"Worker {self.gpu_id} found empty queue")
-                    break
-        print(f"Worker {self.gpu_id} finished")
+        torch.cuda.set_device(self.gpu_id)
+        print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).pci_bus_id}")
+        while True:
+            try:
+                system = self.queue.get(timeout=10)
+                print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
+                system.set_calculator(self.calc)
+                print(system.calc.config)
+                compute_energy(system)
+                del system
+                torch.cuda.empty_cache()
+            except Empty:
+                print(f"Worker {self.gpu_id} found empty queue")
+                break
+    print(f"Worker {self.gpu_id} finished")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

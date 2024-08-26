@@ -70,7 +70,7 @@ def main(args):
     for system in cs:
         system.write_to_db(bulk_db, slab_db)
         system.set_path(args.traj_dir)
-        if not args.distributed:
+        if args.distributed == "False":
                 system.set_calculator(calc)
     
     return cs
@@ -131,14 +131,14 @@ if __name__ == "__main__":
     parser.add_argument("--top_p", type=float, default=0.9)
     parser.add_argument("--instruction_prompt", type=str, default="")
     parser.add_argument("--slurm_partition", type=str)
-    parser.add_argument("--distributed", type=bool, default=False)
+    parser.add_argument("--distributed", type=str, default="False")
     parser.add_argument("--num_gpus", type=int, default=1)
     args = parser.parse_args()
     
     
     cs = main(args)
     
-    if args.distributed:
+    if args.distributed == "True":
         print("Running distributed")
         print(cuda.runtime.getDeviceCount())
         multiprocessing.set_start_method("spawn", force=True)

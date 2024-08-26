@@ -129,14 +129,14 @@ if __name__ == "__main__":
         cs = batched(cs, args.num_gpus)
         print(f"number of batches: {len(cs)}")
         batches = zip(cs, gpu_ids)
-        print(f"number of batches: {len(batches)}")
-        print(batches)
         workers = [Worker(batch) for batch in batches]
         print(f"number of workers: {len(workers)}")
         for worker in workers:
+            print(f"starting worker {worker.gpu_id}")
             worker.start()
         for worker in workers:
             worker.join()
+            print(f"worker {worker.gpu_id} terminated")
     else: #Run on single gpu
         for system in cs:
             compute_energy(system)

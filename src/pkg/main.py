@@ -59,8 +59,8 @@ def main(args):
     
 
     
-    bulk_db = connect("bulk.db")
-    slab_db = connect("slab.db")
+    bulk_db = connect("bulk-dist.db")
+    slab_db = connect("slab-dist.db")
     
     calc = None
     if not args.distributed:
@@ -83,7 +83,7 @@ def main(args):
     #print("Done")
   
 def compute_energy(catalyst_system):
-    adsorbate_slab_db = connect("adsorbate_slab.db")
+    adsorbate_slab_db = connect("adsorbate_slab_dist.db")
     catalyst_system.relax_adsorbate_slabs(adsorbate_slab_db)
     return catalyst_system
 

@@ -3,6 +3,7 @@ import os
 import argparse
 import pandas as pd
 import multiprocessing
+from queue import Empty
 import cupy
 from cupy import cuda
 import numpy as np
@@ -99,7 +100,7 @@ class Worker(multiprocessing.Process):
                     system = self.queue.get_nowait()
                     print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
                     compute_energy(system)
-                except multiprocessing.Queue.Empty:
+                except Empty:
                     break
         print(f"Worker {self.gpu_id} finished")
 

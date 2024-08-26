@@ -51,7 +51,6 @@ def main(args):
         create_llm_samples(args)
     atom_obj_list = read_llm_samples(args.out_path) 
     adsorbate = create_adsorbate(args.adsorbate)
-    #calc = setup_calculator(args.ml_model_checkpoint)
     cs = [CatalystSystem(atom_obj, adsorbate, args.surface_site_sampling_mode) for atom_obj in atom_obj_list]
     
     #If any of the CatalystSystems did not manage to create valid slabs, remove them from the list
@@ -61,12 +60,17 @@ def main(args):
     
     bulk_db = connect("bulk.db")
     slab_db = connect("slab.db")
+    
+    calc = None
+    if not args.distributed:
+        calc = setup_calculator(args.ml_model_checkpoint)
 
     
     for system in cs:
         system.write_to_db(bulk_db, slab_db)
         system.set_path(args.traj_dir)
-        #system.set_calculator(calc)
+        if not args.distributed:
+                system.set_calculator(calc)
     
     return cs
     #if args.distributed:

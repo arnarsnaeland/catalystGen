@@ -66,7 +66,7 @@ def main(args):
     for system in cs:
         system.write_to_db(bulk_db, slab_db)
         system.set_path(args.traj_dir)
-        system.set_calculator(calc)
+        #system.set_calculator(calc)
     
     return cs
     #if args.distributed:

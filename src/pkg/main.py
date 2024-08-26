@@ -62,7 +62,7 @@ def main(args):
     slab_db = connect("slab.db")
     
     calc = None
-    if not args.distributed:
+    if args.distributed == "False":
         calc = setup_calculator(args.ml_model_checkpoint)
 
     

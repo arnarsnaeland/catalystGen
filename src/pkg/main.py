@@ -16,9 +16,9 @@ from ase.io import read, write
 from ase.collections import g2
 from ase.db import connect
 
-from src.pkg.modelPrompter import prompt_llm
-from src.pkg.calculate import setup_calculator
-from src.pkg.catalyst_system import CatalystSystem
+from modelPrompter import prompt_llm
+from calculate import setup_calculator
+from catalyst_system import CatalystSystem
 
 #Creates samples using the llm and saves them to a csv file, out_path
 def create_llm_samples(args):

@@ -9,6 +9,7 @@ import cupy
 from cupy import cuda
 import numpy as np
 import torch
+import submitit
 
 from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig
 from ase.io import read, write
@@ -63,16 +64,13 @@ def main(args):
     bulk_db = connect("bulk-dist.db")
     slab_db = connect("slab-dist.db")
     
-    calc = None
-    if args.distributed == "False":
-        calc = setup_calculator(args.ml_model_checkpoint)
+    calc = setup_calculator(args.ml_model_checkpoint)
 
     
     for system in cs:
         system.write_to_db(bulk_db, slab_db)
         system.set_path(args.traj_dir)
-        if args.distributed == "False":
-                system.set_calculator(calc)
+        system.set_calculator(calc)
     
     return cs
     #if args.distributed:
@@ -139,27 +137,37 @@ if __name__ == "__main__":
     cs = main(args)
     
     if args.distributed == "True":
-        print("Running distributed")
-        print(cuda.runtime.getDeviceCount())
-        launch_config = LaunchConfig(
-                min_nodes=1,
-                max_nodes=1,
-                nproc_per_node=args.num_gpus,
-                rdzv_backend="c10d",
-                max_restarts=0,
-            )
+        #print("Running distributed")
+        #print(cuda.runtime.getDeviceCount())
+        #launch_config = LaunchConfig(
+        #        min_nodes=1,
+        #        max_nodes=1,
+        #        nproc_per_node=args.num_gpus,
+        #        rdzv_backend="c10d",
+        #        max_restarts=0,
+        #    )
         #multiprocessing.set_start_method("spawn", force=True)
         #gpu_ids = range(args.num_gpus)
         #workers = [Worker(queue, i) for i in gpu_ids]
         #print(f"number of workers: {len(workers)}")
         
-        queue = multiprocessing.get_context("spawn").Queue()
-        print(f"number of systems: {len(cs)}")
-        for system in cs:
-            queue.put(system)
-        print("All processes started")
-        elastic_launch(launch_config, Worker)(queue)
-        print("All processes finished")
+        #queue = multiprocessing.get_context("spawn").Queue()
+        #print(f"number of systems: {len(cs)}")
+        executor = submitit.AutoExecutor(folder="log_test")
+        executor.update_parameters(timeout_min=60*2, slurm_partition="sm3090_devel", gpus_per_node=1, cpus_per_task=8, nodes=1, tasks_per_node=1, slurm_array_parallelism=10)
+        
+        cs = batched(cs, args.num_gpus)
+        
+        jobs = executor.map_array(compute_energy, cs)
+        
+        outputs = [job.result() for job in jobs]
+        
+        
+        #for system in cs:
+        #    queue.put(system)
+        #print("All processes started")
+        #elastic_launch(launch_config, Worker)(queue)
+        #print("All processes finished")
 #        for worker in workers:
 #            print(f"starting worker {worker.gpu_id}")
 #            worker.start()

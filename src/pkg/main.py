@@ -19,6 +19,8 @@ from modelPrompter import prompt_llm
 from calculate import setup_calculator
 from catalyst_system import CatalystSystem
 
+
+
 #Creates samples using the llm and saves them to a csv file, out_path
 def create_llm_samples(args):
     if ".csv" not in args.out_path:
@@ -94,27 +96,33 @@ def batched(lst, num_batches):
     return np.array_split(lst, num_batches)
 
 class Worker(multiprocessing.Process):
-    def __init__(self, queue):
+    def __init__(self, cs):
         super().__init__()
-        #self.gpu_id = gpu_id
-        self.queue = queue
+        from mpi4py import MPI
+        COMM = MPI.COMM_WORLD
+        self.rank = COMM.Get_rank()        
+        self.cs = cs
         self.calc = setup_calculator("eq2_153M_ec4_allmd.pt")
         self.run()
         
     def run(self):
         #print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).pci_bus_id}")
-        while True:
-            try:
-                system = self.queue.get(timeout=10)
-                #print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
-                system.set_calculator(self.calc)
-                print(system.calc.config)
-                compute_energy(system)
-                del system
-            except Empty:
-                #print(f"Worker {self.gpu_id} found empty queue")
-                break
-        #print(f"Worker {self.gpu_id} finished")
+        cs = cs[self.rank]
+        for system in cs:
+            system.set_calculator(self.calc)
+            compute_energy(system)
+        
+           # try:
+            #    system = self.queue.get(timeout=10)
+            #    #print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
+            #    system.set_calculator(self.calc)
+            #    print(system.calc.config)
+            #    compute_energy(system)
+            #    del system
+            #except Empty:
+            #    #print(f"Worker {self.gpu_id} found empty queue")
+            #    break
+        print(f"Worker {self.rank} finished")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -149,16 +157,17 @@ if __name__ == "__main__":
                 max_restarts=0,
             )
         #multiprocessing.set_start_method("spawn", force=True)
-        queue = multiprocessing.Queue()
+        #queue = multiprocessing.Queue()
         #gpu_ids = range(args.num_gpus)
         print(f"number of systems: {len(cs)}")
-        for system in cs:
-            queue.put(system)
+        cs = batched(cs, args.num_gpus)
+        #for system in cs:
+        #    queue.put(system)
         #workers = [Worker(queue, i) for i in gpu_ids]
         #print(f"number of workers: {len(workers)}")
         
         print("All processes started")
-        elastic_launch(launch_config, Worker)(queue)
+        elastic_launch(launch_config, Worker)(cs)
         print("All processes finished")
 #        for worker in workers:
 #            print(f"starting worker {worker.gpu_id}")

@@ -85,10 +85,10 @@ class Worker(multiprocessing.Process):
         super().__init__()
         self.gpu_id = gpu_id
         self.queue = queue
+        torch.cuda.set_device(self.gpu_id)
         self.calc = setup_calculator("eq2_153M_ec4_allmd.pt")
         
     def run(self):
-        torch.cuda.set_device(self.gpu_id)
         print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).pci_bus_id}")
         while True:
             try:

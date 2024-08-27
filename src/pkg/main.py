@@ -102,19 +102,19 @@ class Worker(multiprocessing.Process):
         self.run()
         
     def run(self):
-        print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).pci_bus_id}")
+        #print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).pci_bus_id}")
         while True:
             try:
                 system = self.queue.get(timeout=10)
-                print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
+                #print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
                 system.set_calculator(self.calc)
                 print(system.calc.config)
                 compute_energy(system)
                 del system
             except Empty:
-                print(f"Worker {self.gpu_id} found empty queue")
+                #print(f"Worker {self.gpu_id} found empty queue")
                 break
-        print(f"Worker {self.gpu_id} finished")
+        #print(f"Worker {self.gpu_id} finished")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

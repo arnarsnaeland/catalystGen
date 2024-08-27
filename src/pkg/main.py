@@ -3,9 +3,11 @@ import os
 import argparse
 import pandas as pd
 import torch.multiprocessing as multiprocessing
+from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 from queue import Empty
 import cupy
 from cupy import cuda
+import numpy as np
 import torch
 
 from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig
@@ -58,8 +60,8 @@ def main(args):
     
 
     
-    bulk_db = connect("bulk.db")
-    slab_db = connect("slab.db")
+    bulk_db = connect("bulk-dist.db")
+    slab_db = connect("slab-dist.db")
     
     calc = None
     if args.distributed == "False":
@@ -73,20 +75,31 @@ def main(args):
                 system.set_calculator(calc)
     
     return cs
+    #if args.distributed:
+    #    executor = submitit.AutoExecutor(folder="logs")
+
+    #for system in cs:   
+    #    system.relax_adsorbate_slabs(calc, args.cif_dir)
+    #    system.write_relaxed_adsorbate_slabs_to_db(adsorbate_slab_db)
+    #print("Done")
   
 def compute_energy(catalyst_system):
     adsorbate_slab_db = connect("adsorbate_slab.db")
     catalyst_system.relax_adsorbate_slabs(adsorbate_slab_db)
     return catalyst_system
-    
+
+
+#Split a list into n batches as evenly as possible    
+def batched(lst, num_batches):
+    return np.array_split(lst, num_batches)
 
 class Worker(multiprocessing.Process):
-    def __init__(self, queue, gpu_id):
+    def __init__(self, queue):
         super().__init__()
-        self.gpu_id = gpu_id
+        #self.gpu_id = gpu_id
         self.queue = queue
-        torch.cuda.set_device(self.gpu_id)
         self.calc = setup_calculator("eq2_153M_ec4_allmd.pt")
+        self.run()
         
     def run(self):
         print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).pci_bus_id}")
@@ -98,7 +111,6 @@ class Worker(multiprocessing.Process):
                 print(system.calc.config)
                 compute_energy(system)
                 del system
-                torch.cuda.empty_cache()
             except Empty:
                 print(f"Worker {self.gpu_id} found empty queue")
                 break
@@ -129,20 +141,31 @@ if __name__ == "__main__":
     if args.distributed == "True":
         print("Running distributed")
         print(cuda.runtime.getDeviceCount())
-        multiprocessing.set_start_method("spawn", force=True)
+        launch_config = LaunchConfig(
+                min_nodes=1,
+                max_nodes=1,
+                nproc_per_node=args.num_gpus,
+                rdzv_backend="c10d",
+                max_restarts=0,
+            )
+        #multiprocessing.set_start_method("spawn", force=True)
         queue = multiprocessing.Queue()
-        gpu_ids = range(args.num_gpus)
+        #gpu_ids = range(args.num_gpus)
         print(f"number of systems: {len(cs)}")
         for system in cs:
             queue.put(system)
-        workers = [Worker(queue, i) for i in gpu_ids]
-        print(f"number of workers: {len(workers)}")
-        for worker in workers:
-            print(f"starting worker {worker.gpu_id}")
-            worker.start()
-        for worker in workers:
-            worker.join()
-            print(f"worker {worker.gpu_id} terminated")
+        #workers = [Worker(queue, i) for i in gpu_ids]
+        #print(f"number of workers: {len(workers)}")
+        
+        print("All processes started")
+        elastic_launch(launch_config, Worker)(queue)
+        print("All processes finished")
+#        for worker in workers:
+#            print(f"starting worker {worker.gpu_id}")
+#            worker.start()
+#        for worker in workers:
+#            worker.join()
+#            print(f"worker {worker.gpu_id} terminated")
     else: #Run on single gpu
         for system in cs:
             compute_energy(system)

@@ -84,7 +84,7 @@ def main(args):
     #print("Done")
   
 def compute_energy(catalyst_system):
-    adsorbate_slab_db = connect("adsorbate_slab.db")
+    adsorbate_slab_db = connect("adsorbate_slab-dist.db")
     catalyst_system.relax_adsorbate_slabs(adsorbate_slab_db)
     return catalyst_system
 

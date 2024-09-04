@@ -64,13 +64,15 @@ def main(args):
     bulk_db = connect("bulk-dist.db")
     slab_db = connect("slab-dist.db")
     
-    calc = setup_calculator(args.ml_model_checkpoint)
+    if args.distributed == "False":
+        calc = setup_calculator(args.ml_model_checkpoint)
 
     
     for system in cs:
         system.write_to_db(bulk_db, slab_db)
         system.set_path(args.traj_dir)
-        system.set_calculator(calc)
+        if args.distributed == "False":
+            system.set_calculator(calc)
     
     return cs
   

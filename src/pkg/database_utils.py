@@ -21,4 +21,4 @@ def write_adsorbate_slab_configs_to_db(adsorbate_slab_configs, db):
 def write_adsorbate_slabs_to_db(adslabs, db):
     with db as db:
         for adslab in adslabs:
-            db.write(adslab, bulk_id=adslab.bulk_id, slab_id=adslab.slab_id, adslab_id=adslab.adslab_id, relaxed=True)
+            db.write(adslab, bulk_id=adslab.bulk_id, slab_id=adslab.slab_id, adslab_id=adslab.adslab_id, relaxed=True, adsorbate=adslab.adsorbate.atoms.get_chemical_formula())

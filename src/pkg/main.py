@@ -52,9 +52,12 @@ def write_to_cif(adsorbate_slab_configs:list[AdsorbateSlabConfig], directory:str
 def main(args):
     if args.out_path == "":
         create_llm_samples(args)
-    atom_obj_list = read_llm_samples(args.out_path) 
-    adsorbate = create_adsorbate(args.adsorbate)
-    cs = [CatalystSystem(atom_obj, adsorbate, args.surface_site_sampling_mode) for atom_obj in atom_obj_list]
+    atom_obj_list = read_llm_samples(args.out_path)
+    adsorbate_list = args.adsorbate.split(",") 
+    adsorbates = [create_adsorbate(adsorbate) for adsorbate in adsorbate_list]
+    cs = []
+    for adsorbate in adsorbates:
+        cs.extend([CatalystSystem(atom_obj, adsorbate, args.surface_site_sampling_mode) for atom_obj in atom_obj_list])
     
     #If any of the CatalystSystems did not manage to create valid slabs, remove them from the list
     cs = [i for i in cs if i is not None]

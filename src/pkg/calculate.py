@@ -13,7 +13,7 @@ def setup_calculator(checkpoint_path:str, rank)->OCPCalculator:
         yaml.dump(config, f)
     
     calc = OCPCalculator(
-        config_yml=config_path,
+        config_yml="config0.yml",
         checkpoint_path=checkpoint_path,
         cpu=False,
         seed=42

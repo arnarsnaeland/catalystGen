@@ -159,7 +159,7 @@ def prepare_model_and_tokenizer(model_name, model_path):
     
     return model, tokenizer
         
-def unconditional_sample(model, tokenizer, args):
+def sample(model, tokenizer, args):
 
     prompts = []
     for _ in range(args.num_samples):
@@ -217,4 +217,4 @@ def prompt_llm(args):
     
     model, tokenizer = prepare_model_and_tokenizer(args.model_name, args.model_path)
 
-    return unconditional_sample(model, tokenizer, args)
+    return sample(model, tokenizer, args)

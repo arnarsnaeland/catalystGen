@@ -28,14 +28,14 @@ def create_llm_samples(args):
     prompt_llm(args)
     return args
 
-#Reads cif files from a csv file, returns a list of cifs
+#Reads cif files from a csv file, returns a list of atom objects
 def read_llm_samples(out_path)->list:
     samples = pd.read_csv(out_path, usecols=['cif'])['cif'].tolist()
     atom_obj_list = []
-    for sample in samples:
+    for i, sample in enumerate(samples):
         atom_obj = read(io.StringIO(sample), ':', 'cif')[0]
         atom_obj_list.append(atom_obj)
-    #write(f"sample.traj", atom_obj_list, format="traj") #Write to traj file, TODO: remove this line
+        write(f"sample{i}.cif", atom_obj, format="cif") #Write each generated cif to a cif file TODO: remove this line
     return atom_obj_list
 
 def create_adsorbate(adsorbate:str)->Adsorbate:
@@ -73,17 +73,9 @@ def main(args):
         system.set_calculator(calc)
     
     return cs
-    #if args.distributed:
-    #    executor = submitit.AutoExecutor(folder="logs")
-
-    #for system in cs:   
-    #    system.relax_adsorbate_slabs(calc, args.cif_dir)
-    #    system.write_relaxed_adsorbate_slabs_to_db(adsorbate_slab_db)
-    #print("Done")
   
 def compute_energy(catalyst_system):
-    adsorbate_slab_db = connect("adsorbate_slab-dist.db")
-    catalyst_system.relax_adsorbate_slabs(adsorbate_slab_db)
+    catalyst_system.relax_adsorbate_slabs()
     return catalyst_system
 
 
@@ -91,28 +83,30 @@ def compute_energy(catalyst_system):
 def batched(lst, num_batches):
     return np.array_split(lst, num_batches)
 
+
+
 class Worker(multiprocessing.Process):
-    def __init__(self, queue):
+    def __init__(self, queue, gpu_id):
         super().__init__()
-        #self.gpu_id = gpu_id
+        self.gpu_id = gpu_id
         self.queue = queue
         self.calc = setup_calculator("eq2_153M_ec4_allmd.pt")
-        self.run()
         
     def run(self):
-        #print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).pci_bus_id}")
+        print(f"Running on GPU {self.gpu_id} with {cuda.Device(self.gpu_id).pci_bus_id}")
+        output = []
         while True:
             try:
                 system = self.queue.get(timeout=10)
-                #print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
+                print(f"Running on GPU {self.gpu_id}, computing for bulk{system.adsorbate_slab_configs[0].slab.bulk.db_id}, slab{system.adsorbate_slab_configs[0].slab.db_id}")
                 system.set_calculator(self.calc)
-                print(system.calc.config)
-                compute_energy(system)
+                output.append(compute_energy(system))
                 del system
             except Empty:
-                #print(f"Worker {self.gpu_id} found empty queue")
+                print(f"Worker {self.gpu_id} found empty queue")
                 break
-        #print(f"Worker {self.gpu_id} finished")
+        print(f"Worker {self.gpu_id} finished")
+        return output
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -133,47 +127,41 @@ if __name__ == "__main__":
     parser.add_argument("--num_gpus", type=int, default=1)
     args = parser.parse_args()
     
+    adsorbate_slab_db = connect("adsorbate_slab-dist.db")
     
     cs = main(args)
     
     if args.distributed == "True":
-        #print("Running distributed")
-        #print(cuda.runtime.getDeviceCount())
-        #launch_config = LaunchConfig(
-        #        min_nodes=1,
-        #        max_nodes=1,
-        #        nproc_per_node=args.num_gpus,
-        #        rdzv_backend="c10d",
-        #        max_restarts=0,
-        #    )
-        #multiprocessing.set_start_method("spawn", force=True)
-        #gpu_ids = range(args.num_gpus)
-        #workers = [Worker(queue, i) for i in gpu_ids]
-        #print(f"number of workers: {len(workers)}")
-        
-        #queue = multiprocessing.get_context("spawn").Queue()
-        #print(f"number of systems: {len(cs)}")
-        executor = submitit.AutoExecutor(folder="log_test")
-        executor.update_parameters(timeout_min=60*2, slurm_partition="sm3090_devel", gpus_per_node=1, cpus_per_task=8, nodes=1, tasks_per_node=1, slurm_array_parallelism=10)
-        
-        cs = batched(cs, args.num_gpus)
-        
-        jobs = executor.map_array(compute_energy, cs)
-        
-        outputs = [job.result() for job in jobs]
-        
-        
-        #for system in cs:
-        #    queue.put(system)
-        #print("All processes started")
-        #elastic_launch(launch_config, Worker)(queue)
-        #print("All processes finished")
-#        for worker in workers:
-#            print(f"starting worker {worker.gpu_id}")
-#            worker.start()
-#        for worker in workers:
-#            worker.join()
-#            print(f"worker {worker.gpu_id} terminated")
+
+        # Create a queue to hold the systems
+        queue = multiprocessing.Queue()
+
+        # Add the systems to the queue
+        for system in cs:
+            queue.put(system)
+
+        # Create a list to hold the worker processes
+        workers = []
+
+        # Create and start the worker processes
+        for gpu_id in range(args.num_gpus):
+            worker = Worker(queue, gpu_id)
+            worker.start()
+            workers.append(worker)
+
+        # Wait for all worker processes to finish
+        for worker in workers:
+            worker.join()
+
+        # Collect the results from the worker processes
+        results = []
+        for worker in workers:
+            results.extend(worker.run())
+
+        # Write the relaxed adsorbate slabs to the database
+        for result in results:
+            result.write_relaxed_adsorbate_slabs_to_db(adsorbate_slab_db)
     else: #Run on single gpu
         for system in cs:
             compute_energy(system)
+            system.write_relaxed_adsorbate_slabs_to_db(adsorbate_slab_db)

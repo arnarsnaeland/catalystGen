@@ -57,7 +57,7 @@ class CatalystSystem:
         return AdsorbateSlabConfig(slab, adsorbate, num_sites, num_augmentations_per_site, mode = mode)
     
     
-    def relax_adsorbate_slabs(self, db):
+    def relax_adsorbate_slabs(self):
         for adsorbate_slab_config in self.adsorbate_slab_configs:
             bulk_id = adsorbate_slab_config.slab.bulk.db_id
             slab_id = adsorbate_slab_config.slab.db_id
@@ -75,7 +75,6 @@ class CatalystSystem:
                 relaxed_adslab.slab_id = slab_id
                 relaxed_adslab.adslab_id = i
                 relaxed_adslabs.append(relaxed_adslab)
-            database_utils.write_adsorbate_slabs_to_db(relaxed_adslabs, db)
     
     def write_relaxed_adsorbate_slabs_to_db(self, db):
         database_utils.write_adsorbate_slabs_to_db(self.relaxed_adslabs, db)            

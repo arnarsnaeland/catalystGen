@@ -4,7 +4,8 @@ from ase.io import read
 import torch
 
 def setup_calculator(checkpoint_path:str, rank)->OCPCalculator:
-    config = torch.load(checkpoint_path)[config]
+    a = torch.load(checkpoint_path, map_location=torch.device('cpu'))
+    config = a["config"]
     config["local_rank"] = rank
     calc = OCPCalculator(
         config_yml=config,

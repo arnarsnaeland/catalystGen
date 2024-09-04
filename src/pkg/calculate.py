@@ -1,10 +1,13 @@
 from ase.optimize import BFGS
 from fairchem.core import OCPCalculator 
 from ase.io import read
+import torch
 
-def setup_calculator(checkpoint_path:str)->OCPCalculator:
+def setup_calculator(checkpoint_path:str, rank)->OCPCalculator:
+    config = torch.load(checkpoint_path)[config]
+    config["local_rank"] = rank
     calc = OCPCalculator(
-        checkpoint_path=checkpoint_path,
+        config_yml=config,
         cpu=False,
         seed=42
     )

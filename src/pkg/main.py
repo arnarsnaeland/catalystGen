@@ -92,7 +92,7 @@ class Worker(multiprocessing.Process):
         super().__init__()
         from mpi4py import MPI
         self.COMM = MPI.COMM_WORLD
-        self.RANK = COMM.Get_rank()
+        self.RANK = self.COMM.Get_rank()
         self.gpu_id = gpu_id
         self.queue = queue
         self.calc = setup_calculator("eq2_153M_ec4_allmd.pt", self.rank)

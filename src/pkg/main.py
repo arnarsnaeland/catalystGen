@@ -3,13 +3,8 @@ import os
 import argparse
 import pandas as pd
 import torch.multiprocessing as multiprocessing
-from torch.distributed.launcher.api import LaunchConfig, elastic_launch
 from queue import Empty
-import cupy
-from cupy import cuda
 import numpy as np
-import torch
-import submitit
 
 from fairchem.data.oc.core import Adsorbate, AdsorbateSlabConfig
 from ase.io import read, write
@@ -62,20 +57,17 @@ def main(args):
     #If any of the CatalystSystems did not manage to create valid slabs, remove them from the list
     cs = [i for i in cs if i is not None]
     
+    
+    bulk_db = connect(os.path.join(args.traj_dir, "bulk.db"))
+    slab_db = connect(os.path.join(args.traj_dir, "slab.db"))
 
-    
-    bulk_db = connect("bulk-dist.db")
-    slab_db = connect("slab-dist.db")
-    
-    if args.distributed == "False":
-        calc = setup_calculator(args.ml_model_checkpoint)
+    calc = setup_calculator(args.ml_model_checkpoint)
 
     
     for system in cs:
         system.write_to_db(bulk_db, slab_db)
         system.set_path(args.traj_dir)
-        if args.distributed == "False":
-            system.set_calculator(calc)
+        system.set_calculator(calc)
     
     return cs
   
@@ -91,28 +83,23 @@ def batched(lst, num_batches):
 
 
 class Worker(multiprocessing.Process):
-    def __init__(self, queue, gpu_id):
+    def __init__(self, queue, id, db):
         super().__init__()
-        from mpi4py import MPI
-        self.COMM = MPI.COMM_WORLD
-        self.RANK = self.COMM.Get_rank()
-        self.gpu_id = gpu_id
+        self.id = id
         self.queue = queue
-        self.calc = setup_calculator("eq2_153M_ec4_allmd.pt", self.RANK)
+        self.db = db
         
     def run(self):
-        output = []
         while True:
             try:
                 system = self.queue.get(timeout=10)
-                system.set_calculator(self.calc)
-                output.append(compute_energy(system))
+                compute_energy(system)
+                system.write_relaxed_adsorbate_slabs_to_db(self.db)
                 del system
             except Empty:
-                print(f"Worker {self.gpu_id} found empty queue")
+                print(f"Worker {self.id} found empty queue")
                 break
-        print(f"Worker {self.gpu_id}, rank {self.RANK} finished")
-        return output
+        print(f"Worker {self.id} finished")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -130,10 +117,11 @@ if __name__ == "__main__":
     parser.add_argument("--instruction_prompt", type=str, default="")
     parser.add_argument("--slurm_partition", type=str)
     parser.add_argument("--distributed", type=str, default="False")
-    parser.add_argument("--num_gpus", type=int, default=1)
+    parser.add_argument("--num_processes", type=int, default=1)
+    
     args = parser.parse_args()
     
-    adsorbate_slab_db = connect("adsorbate_slab-dist.db")
+    adsorbate_slab_db = connect(os.path.join(args.traj_dir, "adsorbate_slab.db"))
     
     cs = main(args)
     
@@ -150,8 +138,8 @@ if __name__ == "__main__":
         workers = []
 
         # Create and start the worker processes
-        for gpu_id in range(args.num_gpus):
-            worker = Worker(queue, gpu_id)
+        for id in range(args.num_processes):
+            worker = Worker(queue, id, adsorbate_slab_db)
             worker.start()
             workers.append(worker)
 
@@ -159,14 +147,8 @@ if __name__ == "__main__":
         for worker in workers:
             worker.join()
 
-        # Collect the results from the worker processes
-        results = []
-        for worker in workers:
-            results.extend(worker.run())
-
-        # Write the relaxed adsorbate slabs to the database
-        for result in results:
-            result.write_relaxed_adsorbate_slabs_to_db(adsorbate_slab_db)
+        print("All workers finished")
+        
     else: #Run on single gpu
         for system in cs:
             compute_energy(system)

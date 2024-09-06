@@ -43,8 +43,10 @@ class CatalystSystem:
         self.path = path
 
     def bulk_to_slabs(self, bulk:Bulk)->list[Slab]:
+        # Slab.from_bulk_get_specific_millers((1,1,1), bulk)
+        #TODO: use commented line above, but for now just get the (1,1,1) slab
         try:
-            return Slab.from_bulk_get_all_slabs(bulk) #By default gets all slabs up to miller index 2
+            return Slab.from_bulk_get_specific_millers((1,1,1), bulk) #By default gets all slabs up to miller index 2
         except Exception as e:
             print("Error creating slab from bulk")
             print(e)

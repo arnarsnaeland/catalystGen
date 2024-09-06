@@ -110,7 +110,7 @@ if __name__ == "__main__":
     parser.add_argument("--ml_model_checkpoint", type=str, default="eq2_153M_ec4_allmd.pt")
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=1)
-    parser.add_argument("--samples_file", type=str, default="")
+    parser.add_argument("--samples_file", type=str, default="") #If you want to provide a file with bulk structures to use, otherwise will generate samples
     parser.add_argument("--temperature", type=float, default=0.9)
     parser.add_argument("--top_p", type=float, default=0.9)
     parser.add_argument("--instruction_prompt", type=str, default="")
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     cs = main(args)
     
     if args.distributed == "True":
-
+        multiprocessing.set_start_method("spawn")
         # Create a queue to hold the systems
         queue = multiprocessing.Queue()
 

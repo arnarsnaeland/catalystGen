@@ -211,7 +211,7 @@ def sample(model, tokenizer, args):
             })
 
     df = pd.DataFrame(outputs)
-    df.to_csv(args.out_path, index=False)
+    df.to_csv(args.samples_file, index=False)
 
 def prompt_llm(args):
     

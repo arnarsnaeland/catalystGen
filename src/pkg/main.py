@@ -17,15 +17,14 @@ from catalyst_system import CatalystSystem
 
 #Creates samples using the llm and saves them to a csv file, out_path
 def create_llm_samples(args):
-    if ".csv" not in args.out_path:
-        i = os.environ.get("SLURM_JOB_ID", 0)
-        args.out_path = os.path.join(args.out_path, f"samples_{i}.csv") 
+    i = os.environ.get("SLURM_JOB_ID", 0)
+    args.samples_file = os.path.join(args.out_path, f"samples_{i}.csv") 
     prompt_llm(args)
     return args
 
 #Reads cif files from a csv file, returns a list of atom objects
-def read_llm_samples(out_path)->list:
-    samples = pd.read_csv(out_path, usecols=['cif'])['cif'].tolist()
+def read_llm_samples(samples_path)->list:
+    samples = pd.read_csv(samples_path, usecols=['cif'])['cif'].tolist()
     atom_obj_list = []
     for i, sample in enumerate(samples):
         atom_obj = read(io.StringIO(sample), ':', 'cif')[0]
@@ -45,28 +44,28 @@ def write_to_cif(adsorbate_slab_configs:list[AdsorbateSlabConfig], directory:str
         write(os.path.join(directory, f"adsorbate_slab_{i}.cif"), adsorbate_slab_config.get_metadata_dict(0)["adsorbed_slab_atomsobject"])
 
 def main(args):
-    if args.out_path == "":
+    os.makedirs(args.out_path, exist_ok=False)
+    if args.samples_file == "":
         create_llm_samples(args)
-    atom_obj_list = read_llm_samples(args.out_path)
+    atom_obj_list = read_llm_samples(args.samples_file)
     adsorbate_list = args.adsorbate.split(",") 
     adsorbates = [create_adsorbate(adsorbate) for adsorbate in adsorbate_list]
     cs = []
     for adsorbate in adsorbates:
         cs.extend([CatalystSystem(atom_obj, adsorbate, args.surface_site_sampling_mode) for atom_obj in atom_obj_list])
-    
     #If any of the CatalystSystems did not manage to create valid slabs, remove them from the list
     cs = [i for i in cs if i is not None]
     
     
-    bulk_db = connect(os.path.join(args.traj_dir, "bulk.db"))
-    slab_db = connect(os.path.join(args.traj_dir, "slab.db"))
+    bulk_db = connect(os.path.join(args.out_path, "bulk.db"))
+    slab_db = connect(os.path.join(args.out_path, "slab.db"))
 
     calc = setup_calculator(args.ml_model_checkpoint)
 
     
     for system in cs:
         system.write_to_db(bulk_db, slab_db)
-        system.set_path(args.traj_dir)
+        system.set_path(args.out_path)
         system.set_calculator(calc)
     
     return cs
@@ -106,22 +105,21 @@ if __name__ == "__main__":
     parser.add_argument("--model_name", type=str, required=True)
     parser.add_argument("--model_path", type=str, required=True)
     parser.add_argument("--adsorbate", type=str, required=True)
+    parser.add_argument("--out_path", type=str, required=True)
     parser.add_argument("--surface_site_sampling_mode", type=str, default="random_site_heuristic_placement")
     parser.add_argument("--ml_model_checkpoint", type=str, default="eq2_153M_ec4_allmd.pt")
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=1)
-    parser.add_argument("--out_path", type=str, default="")
-    parser.add_argument("--traj_dir", type=str, default="traj_files")
+    parser.add_argument("--samples_file", type=str, default="")
     parser.add_argument("--temperature", type=float, default=0.9)
     parser.add_argument("--top_p", type=float, default=0.9)
     parser.add_argument("--instruction_prompt", type=str, default="")
-    parser.add_argument("--slurm_partition", type=str)
     parser.add_argument("--distributed", type=str, default="False")
     parser.add_argument("--num_processes", type=int, default=1)
     
     args = parser.parse_args()
     
-    adsorbate_slab_db = connect(os.path.join(args.traj_dir, "adsorbate_slab.db"))
+    adsorbate_slab_db = connect(os.path.join(args.out_path, "adsorbate_slab.db"))
     
     cs = main(args)
     
@@ -149,7 +147,7 @@ if __name__ == "__main__":
 
         print("All workers finished")
         
-    else: #Run on single gpu
+    else: #Run a single process
         for system in cs:
             compute_energy(system)
             system.write_relaxed_adsorbate_slabs_to_db(adsorbate_slab_db)

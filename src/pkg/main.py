@@ -23,13 +23,13 @@ def create_llm_samples(args):
     return args
 
 #Reads cif files from a csv file, returns a list of atom objects
-def read_llm_samples(samples_path)->list:
-    samples = pd.read_csv(samples_path, usecols=['cif'])['cif'].tolist()
+def read_llm_samples(args)->list:
+    samples = pd.read_csv(args.samples_file, usecols=['cif'])['cif'].tolist()
     atom_obj_list = []
     for i, sample in enumerate(samples):
         atom_obj = read(io.StringIO(sample), ':', 'cif')[0]
         atom_obj_list.append(atom_obj)
-        write(f"sample{i}.cif", atom_obj, format="cif") #Write each generated cif to a cif file TODO: remove this line
+        write(os.path.join(args.out_path, f"sample{i}.cif"), atom_obj, format="cif") #Write each generated cif to a cif file TODO: remove this line
     return atom_obj_list
 
 def create_adsorbate(adsorbate:str)->Adsorbate:
@@ -47,7 +47,7 @@ def main(args):
     os.makedirs(args.out_path, exist_ok=False)
     if args.samples_file == "":
         create_llm_samples(args)
-    atom_obj_list = read_llm_samples(args.samples_file)
+    atom_obj_list = read_llm_samples(args)
     adsorbate_list = args.adsorbate.split(",") 
     adsorbates = [create_adsorbate(adsorbate) for adsorbate in adsorbate_list]
     cs = []
@@ -70,8 +70,8 @@ def main(args):
     
     return cs
   
-def compute_energy(catalyst_system):
-    catalyst_system.relax_adsorbate_slabs()
+def compute_energy(catalyst_system, db):
+    catalyst_system.relax_adsorbate_slabs(db)
     return catalyst_system
 
 
@@ -92,8 +92,7 @@ class Worker(multiprocessing.Process):
         while True:
             try:
                 system = self.queue.get(timeout=10)
-                compute_energy(system)
-                system.write_relaxed_adsorbate_slabs_to_db(self.db)
+                compute_energy(system, self.db)
                 del system
             except Empty:
                 print(f"Worker {self.id} found empty queue")
@@ -149,5 +148,4 @@ if __name__ == "__main__":
         
     else: #Run a single process
         for system in cs:
-            compute_energy(system)
-            system.write_relaxed_adsorbate_slabs_to_db(adsorbate_slab_db)
+            compute_energy(system, adsorbate_slab_db)

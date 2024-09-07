@@ -32,9 +32,8 @@ class CatalystSystem:
         self.calc = None
         self.bulk = Bulk(bulk_atoms=bulk_atoms)
         self.slabs = self.bulk_to_slabs(self.bulk)
-        if self.slabs is None:
-            return None
-        self.adsorbate_slab_configs = [self.slab_to_adsorbate_slab_config(slab, adsorbate, mode, num_sites, num_augmentations_per_site) for slab in self.slabs]
+        if self.slabs:
+            self.adsorbate_slab_configs = [self.slab_to_adsorbate_slab_config(slab, adsorbate, mode, num_sites, num_augmentations_per_site) for slab in self.slabs]
    
     def set_calculator(self, calc):
         self.calc = calc

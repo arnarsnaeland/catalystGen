@@ -54,7 +54,7 @@ def main(args):
     for adsorbate in adsorbates:
         cs.extend([CatalystSystem(atom_obj, adsorbate, args.surface_site_sampling_mode) for atom_obj in atom_obj_list])
     #If any of the CatalystSystems did not manage to create valid slabs, remove them from the list
-    cs = [i for i in cs if i is not None]
+    cs = [i for i in cs if i.slabs is not None]
     
     
     bulk_db = connect(os.path.join(args.out_path, "bulk.db"))

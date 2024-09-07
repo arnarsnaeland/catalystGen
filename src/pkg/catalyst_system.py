@@ -74,7 +74,7 @@ class CatalystSystem:
                 relaxed_adslab.slab_id = slab_id
                 relaxed_adslab.adslab_id = i
                 relaxed_adslabs.append(relaxed_adslab)
-            self.write_relaxed_adsorbate_slabs_to_db(relaxed_adslab, db)
+            self.write_relaxed_adsorbate_slabs_to_db(relaxed_adslabs, db)
     def write_relaxed_adsorbate_slabs_to_db(self, relaxed_adslabs, db):
         database_utils.write_adsorbate_slabs_to_db(relaxed_adslabs, db)            
     

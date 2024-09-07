@@ -60,6 +60,7 @@ class CatalystSystem:
         for adsorbate_slab_config in self.adsorbate_slab_configs:
             bulk_id = adsorbate_slab_config.slab.bulk.db_id
             slab_id = adsorbate_slab_config.slab.db_id
+            adsorbate = adsorbate_slab_config.adsorbate.atoms.get_chemical_formula()
             os.makedirs(os.path.join(self.path, f"bulk{bulk_id}_slab{slab_id}"), exist_ok=True)
             relaxed_adslabs = []
             for i, atom_obj in enumerate(adsorbate_slab_config.atoms_list):
@@ -73,6 +74,7 @@ class CatalystSystem:
                 relaxed_adslab.bulk_id = bulk_id
                 relaxed_adslab.slab_id = slab_id
                 relaxed_adslab.adslab_id = i
+                relaxed_adslab.adsorbate = adsorbate
                 relaxed_adslabs.append(relaxed_adslab)
             self.write_relaxed_adsorbate_slabs_to_db(relaxed_adslabs, db)
     def write_relaxed_adsorbate_slabs_to_db(self, relaxed_adslabs, db):

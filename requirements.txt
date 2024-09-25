@@ -1,0 +1,5 @@
+pandas==2.2.3
+fairchem-core==1.2.0
+fairchem-data-oc==0.1.0
+transformers==4.44.2
+peft==0.12.0

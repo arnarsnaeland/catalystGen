@@ -6,11 +6,12 @@
 </figure>
 
 ## 🛠 Installation
-TODO: add install.sh
-Run the following command to install all dependencies. 
-```
-source install.sh
-```
+Install dependencies from requirements.txt
+
+Intall pytorch, torch_geometric and torch_scatter according to your specific setup: 
+https://pytorch.org/
+https://pytorch-geometric.readthedocs.io/en/latest/install/installation.html
+https://pypi.org/project/torch-scatter/
 
 ## Example usage
 ```

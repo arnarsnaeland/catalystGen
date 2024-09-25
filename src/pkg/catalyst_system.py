@@ -32,6 +32,8 @@ class CatalystSystem:
         self.calc = None
         self.bulk = Bulk(bulk_atoms=bulk_atoms)
         self.slabs = self.bulk_to_slabs(self.bulk)
+        
+        #If creation of slabs was successful then create a list of adsorbate slab configs
         if self.slabs:
             self.adsorbate_slab_configs = [self.slab_to_adsorbate_slab_config(slab, adsorbate, mode, num_sites, num_augmentations_per_site) for slab in self.slabs]
    
@@ -41,9 +43,8 @@ class CatalystSystem:
     def set_path(self, path:str):
         self.path = path
 
+    #Get all possible slabs for a given bulk
     def bulk_to_slabs(self, bulk:Bulk)->list[Slab]:
-        # Slab.from_bulk_get_specific_millers((1,1,1), bulk)
-        #TODO: use commented line above, but for now just get the (1,1,1) slab
         try:
             return Slab.from_bulk_get_all_slabs(bulk) #By default gets all slabs up to miller index 2
         except Exception as e:
@@ -51,17 +52,17 @@ class CatalystSystem:
             print(e)
             return None     
         
-        
+    #Creates an AdsorbateSlabConfig object for a given slab and adsorbate 
     def slab_to_adsorbate_slab_config(self, slab:Slab, adsorbate:Adsorbate, mode, num_sites, num_augmentations_per_site )->AdsorbateSlabConfig:
         return AdsorbateSlabConfig(slab, adsorbate, num_sites, num_augmentations_per_site, mode = mode)
     
-    
+    #Relaxes all adsorbate slabs in the CatalystSystem
     def relax_adsorbate_slabs(self, db):
         for adsorbate_slab_config in self.adsorbate_slab_configs:
             bulk_id = adsorbate_slab_config.slab.bulk.db_id
             slab_id = adsorbate_slab_config.slab.db_id
             adsorbate = adsorbate_slab_config.adsorbate.atoms.get_chemical_formula()
-            os.makedirs(os.path.join(self.path, f"bulk{bulk_id}_slab{slab_id}"), exist_ok=True)
+            os.makedirs(os.path.join(self.path, f"bulk{bulk_id}_slab{slab_id}"), exist_ok=True) #Create directory to store calculations for the slab
             relaxed_adslabs = []
             for i, atom_obj in enumerate(adsorbate_slab_config.atoms_list):
                 log_path = os.path.join(self.path, f"bulk{bulk_id}_slab{slab_id}/adslab{i}.txt")
@@ -76,10 +77,13 @@ class CatalystSystem:
                 relaxed_adslab.adslab_id = i
                 relaxed_adslab.adsorbate = adsorbate
                 relaxed_adslabs.append(relaxed_adslab)
-            self.write_relaxed_adsorbate_slabs_to_db(relaxed_adslabs, db)
+            self.write_relaxed_adsorbate_slabs_to_db(relaxed_adslabs, db) #Write the all relaxed adsorbate slabs to database
+    
+    #Write a list of adsorbate slabs to database
     def write_relaxed_adsorbate_slabs_to_db(self, relaxed_adslabs, db):
         database_utils.write_adsorbate_slabs_to_db(relaxed_adslabs, db)            
     
+    #Write bulk and slabs to database
     def write_to_db(self, bulk_db, slab_db):
         database_utils.write_bulk_to_db(self.bulk, bulk_db)
         database_utils.write_slabs_to_db(self.slabs, slab_db) 

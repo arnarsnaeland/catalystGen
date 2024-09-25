@@ -20,18 +20,22 @@ def create_llm_samples(args):
     i = os.environ.get("SLURM_JOB_ID", 0)
     args.samples_file = os.path.join(args.out_path, f"samples_{i}.csv") 
     prompt_llm(args)
-    return args
 
-#Reads cif files from a csv file, returns a list of atom objects
+#Reads cif files from a csv file, returns a list of atom objects.
+#Also writes CIF file for each atom object
 def read_llm_samples(args)->list:
     samples = pd.read_csv(args.samples_file, usecols=['cif'])['cif'].tolist()
     atom_obj_list = []
     for i, sample in enumerate(samples):
         atom_obj = read(io.StringIO(sample), ':', 'cif')[0]
         atom_obj_list.append(atom_obj)
-        write(os.path.join(args.out_path, f"sample{i}.cif"), atom_obj, format="cif") #Write each generated cif to a cif file TODO: remove this line
+        write_sample_cif(atom_obj, i, args.out_path)
     return atom_obj_list
 
+def write_sample_cif(atom_obj, i, path):
+    write(os.path.join(path, f"sample{i}.cif"), atom_obj, format="cif") #Write each generated cif to a cif file TODO: remove this line
+
+#TODO: Look into better collections of adsorbates
 def create_adsorbate(adsorbate:str)->Adsorbate:
     ads = g2[adsorbate]
     return Adsorbate(ads)
@@ -44,13 +48,15 @@ def write_to_cif(adsorbate_slab_configs:list[AdsorbateSlabConfig], directory:str
         write(os.path.join(directory, f"adsorbate_slab_{i}.cif"), adsorbate_slab_config.get_metadata_dict(0)["adsorbed_slab_atomsobject"])
 
 def main(args):
-    os.makedirs(args.out_path, exist_ok=False)
-    if args.samples_file == "":
+    os.makedirs(args.out_path, exist_ok=False) #Create main directory for run
+    if args.samples_file == "": #If no samples file is given prompt LLM to create one
         create_llm_samples(args)
     atom_obj_list = read_llm_samples(args)
     adsorbate_list = args.adsorbate.split(",") 
     adsorbates = [create_adsorbate(adsorbate) for adsorbate in adsorbate_list]
     cs = []
+    
+    #Create catalyst systems for each bulk and each adsorbate
     for adsorbate in adsorbates:
         cs.extend([CatalystSystem(atom_obj, adsorbate, args.surface_site_sampling_mode) for atom_obj in atom_obj_list])
     #If any of the CatalystSystems did not manage to create valid slabs, remove them from the list
@@ -69,7 +75,8 @@ def main(args):
         system.set_calculator(calc)
     
     return cs
-  
+
+#Compute energy for a catalyst system, also save results to database.  
 def compute_energy(catalyst_system, db):
     catalyst_system.relax_adsorbate_slabs(db)
     return catalyst_system
@@ -113,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument("--temperature", type=float, default=0.9)
     parser.add_argument("--top_p", type=float, default=0.9)
     parser.add_argument("--instruction_prompt", type=str, default="")
-    parser.add_argument("--distributed", type=str, default="False")
+    parser.add_argument("--distributed", type=str, default="False") #TODO: Change to bool instead of string
     parser.add_argument("--num_processes", type=int, default=1)
     
     args = parser.parse_args()
@@ -122,30 +129,26 @@ if __name__ == "__main__":
     
     cs = main(args)
     
-    if args.distributed == "True":
-        multiprocessing.set_start_method("spawn")
+    # Do not use, need to rework calculator method to use multi gpu setups
+    #if args.distributed == "True":
+    #    multiprocessing.set_start_method("spawn")
         # Create a queue to hold the systems
-        queue = multiprocessing.Queue()
-
+    #    queue = multiprocessing.Queue()
         # Add the systems to the queue
-        for system in cs:
-            queue.put(system)
-
+    #    for system in cs:
+    #        queue.put(system)
         # Create a list to hold the worker processes
-        workers = []
-
+    #    workers = []
         # Create and start the worker processes
-        for id in range(args.num_processes):
-            worker = Worker(queue, id, adsorbate_slab_db)
-            worker.start()
-            workers.append(worker)
-
+    #    for id in range(args.num_processes):
+    #        worker = Worker(queue, id, adsorbate_slab_db)
+    #        worker.start()
+    #        workers.append(worker)
         # Wait for all worker processes to finish
-        for worker in workers:
-            worker.join()
-
-        print("All workers finished")
+    #    for worker in workers:
+    #        worker.join()
+    #    print("All workers finished")
         
-    else: #Run a single process
-        for system in cs:
-            compute_energy(system, adsorbate_slab_db)
+     #Run a single process
+    for system in cs:
+        compute_energy(system, adsorbate_slab_db)

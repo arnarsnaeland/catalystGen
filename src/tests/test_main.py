@@ -73,10 +73,3 @@ loop_
     bulk = cif_to_bulk(cif)
     assert bulk.atoms.get_chemical_formula() == "CdSnRu2"
     
-def test_create_adsorbate():
-    return
-
-def test_bulk_to_slab():
-    bulk = Bulk(bulk_src_id_from_db="mp-30")
-    slabs = Slab.from_bulk_get_specific_millers(bulk=bulk, specific_millers=(1,1,1))
-    

@@ -17,7 +17,9 @@ def write_adsorbate_slab_configs_to_db(adsorbate_slab_configs, db):
             for atom_obj in adsorbate_slab_config.atoms_list:
                 id = db.write(atom_obj, bulk_id=adsorbate_slab_config.slab.bulk.db_id, slab_id=adsorbate_slab_config.slab.db_id, relaxed=False)
                 atom_obj.db_id = id
-                
+
+#Writes a list of adsorbate slabs to database, stores bulk id, slab id, adslab id and the adsorbate for reference
+#TODO: improve this to just store the referenced objects directly? ASE db doesn't have a great way to create new tables                
 def write_adsorbate_slabs_to_db(adslabs, db):
     with db as db:
         for adslab in adslabs:

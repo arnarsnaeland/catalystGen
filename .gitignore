@@ -4,7 +4,6 @@ __pycache__/
 *.out
 *.traj
 *.cif
-*.csv
 *.pt
 *.db
 *.sh

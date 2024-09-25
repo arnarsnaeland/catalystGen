@@ -13,6 +13,11 @@ https://pytorch.org/
 https://pytorch-geometric.readthedocs.io/en/latest/install/installation.html
 https://pypi.org/project/torch-scatter/
 
+## Models
+EquiformerV2 trained model can be found [here](https://dl.fbaipublicfiles.com/opencatalystproject/models/2023_06/oc20/s2ef/eq2_153M_ec4_allmd.pt) 
+
+Finetuned PEFT configuration for LLM can be found [here](https://huggingface.co/addisnae/demo), set model_path to "addisnae/demo" to use.
+
 ## Example usage
 ```
 python src/pkg/main.py --model_name=7b --model_path=path/to/model/checkpoint --adsorbate=N2 --out_path=path/to/output/folder
@@ -21,7 +26,7 @@ python src/pkg/main.py --model_name=7b --model_path=path/to/model/checkpoint --a
 |   Argument | Explanation |
 | ---------: | :----------------------- |
 |  `--model_name`  | Specify which llama 2 model to use, for example "7b" or "70b-chat" |
-| `--model_path`  | Specify path to fine-tuned weights|
+| `--model_path`  | Specify path to fine-tuned weights, can use "addisnae/demo" for pre made PEFT configuration |
 | `--adsorbate` | Which adsorbate to use in string format, for example "H2" |
 | `--out_path` | Output path, all databases, CIF, and trajectory files will be stored under this directory |
 
